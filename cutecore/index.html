@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="it" data-theme="lab">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#e4e6e9">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="cutecore">
+  <meta name="description" content="cutecore — una macchina che compone musica cutecore e la disegna in tempo reale.">
+  <title>cutecore</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon-180.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Mochiy+Pop+One&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="top">
+      <div class="brand">
+        <h1 id="title">cutecore</h1>
+        <span class="kao" id="kao" aria-hidden="true">(=^･ω･^=)</span>
+      </div>
+      <div class="meta" id="meta">—</div>
+    </header>
+
+    <main class="board">
+      <!-- 01 SHEET -->
+      <section class="panel p-sheet">
+        <h2><b>01</b> SHEET</h2>
+        <div class="cv" data-cv="sheet"></div>
+        <dl class="stats">
+          <div><dt>PRINTED</dt><dd data-stat="printed">0 %</dd></div>
+          <div><dt>PEN</dt><dd><button class="link" id="pen" title="Cambia penna (P)"><span data-stat="pen">Mesh</span></button></dd></div>
+          <div><dt>TIME</dt><dd data-stat="time">0:00</dd></div>
+        </dl>
+      </section>
+
+      <!-- 02 METERS -->
+      <section class="panel p-meters">
+        <div class="box box-wave">
+          <div class="lbl"><span><b>02</b> WAVEFORM</span><span class="acc">LOUDNESS S <em data-stat="shortterm"></em></span></div>
+          <div class="cv" data-cv="wave"></div>
+        </div>
+        <div class="trio">
+          <div class="box"><div class="lbl"><span>SCOPE</span></div><div class="cv" data-cv="scope"></div></div>
+          <div class="box"><div class="lbl"><span>SPECTRUM</span></div><div class="cv" data-cv="spectrum"></div></div>
+          <div class="box"><div class="lbl"><span>VECTOR</span></div><div class="cv" data-cv="vector"></div></div>
+        </div>
+        <dl class="stats">
+          <div><dt>MOMENTARY</dt><dd data-stat="momentary">—</dd></div>
+          <div><dt>INTEGRATED</dt><dd data-stat="integrated">—</dd></div>
+          <div><dt>PEAK</dt><dd data-stat="peak">—</dd></div>
+        </dl>
+      </section>
+
+      <!-- 03 ROLL -->
+      <section class="panel p-roll">
+        <h2><b>03</b> ROLL</h2>
+        <div class="cv framed" data-cv="roll"></div>
+        <dl class="stats">
+          <div><dt>BAR</dt><dd data-stat="bar">1.1</dd></div>
+          <div><dt>TEMPO</dt><dd data-stat="tempo">—</dd></div>
+          <div><dt>PARTS</dt><dd data-stat="parts">—</dd></div>
+          <div><dt>SOUNDING</dt><dd data-stat="sounding">—</dd></div>
+        </dl>
+      </section>
+
+      <!-- 04 ROOTS -->
+      <section class="panel p-roots">
+        <h2><b>04</b> ROOTS</h2>
+        <div class="cv" data-cv="roots">
+          <ul class="key">
+            <li class="k-title">KEY</li>
+            <li><i class="k-note"></i>a note, grows the longer it rings</li>
+            <li><i class="k-hit"></i>a hit from the last two bars</li>
+            <li><i class="k-line acc"></i>kick, and the melody's path</li>
+            <li><i class="k-line acc2"></i>snare</li>
+            <li><i class="k-line soft"></i>hat</li>
+          </ul>
+        </div>
+        <dl class="stats">
+          <div><dt>NOTES</dt><dd data-stat="notes">0</dd></div>
+          <div><dt>MOST PLAYED</dt><dd data-stat="most">—</dd></div>
+          <div><dt>NOW</dt><dd data-stat="now">—</dd></div>
+          <div><dt>HITS</dt><dd data-stat="hits">0</dd></div>
+        </dl>
+      </section>
+
+      <!-- 05 FOUNTAIN -->
+      <section class="panel p-fountain">
+        <h2><b>05</b> FOUNTAIN</h2>
+        <div class="cv" data-cv="fountain"></div>
+        <dl class="stats">
+          <div><dt>SPARKS</dt><dd data-stat="sparks">0</dd></div>
+          <div><dt>SIDES · LOWS</dt><dd data-stat="sides">—</dd></div>
+          <div><dt>MIDDLE · HIGHS</dt><dd data-stat="middle">—</dd></div>
+        </dl>
+      </section>
+
+      <!-- 06 ORBIT -->
+      <section class="panel p-orbit">
+        <h2><b>06</b> ORBIT</h2>
+        <div class="legend" id="legend"></div>
+        <div class="cv" data-cv="orbit"></div>
+        <dl class="stats">
+          <div><dt>BAR</dt><dd data-stat="bar2">1.1</dd></div>
+          <div><dt>TEMPO</dt><dd data-stat="tempo2">—</dd></div>
+          <div><dt>REVOLUTION</dt><dd data-stat="revolution">—</dd></div>
+          <div><dt>SOUNDING</dt><dd data-stat="sounding2">—</dd></div>
+        </dl>
+      </section>
+    </main>
+
+    <footer class="transport">
+      <button class="play" id="play" aria-label="Play">▶</button>
+      <span class="time"><span id="tnow">0:00</span> / <span id="tdur">0:00</span></span>
+      <input type="range" id="scrub" min="0" max="1000" value="0" aria-label="Posizione">
+      <span class="busy" id="busy"></span>
+      <div class="actions">
+        <button id="new" title="Nuova canzone (N)">↻ NEW</button>
+        <label class="btn" title="Visualizza un tuo file audio">⤒ LOAD<input type="file" id="file" accept="audio/*"></label>
+        <button id="theme" title="Tema (T)">◎ LAB</button>
+      </div>
+    </footer>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="ov-card">
+      <div class="ov-kao">(｡•ᴗ•｡)♡</div>
+      <div class="ov-title">cutecore</div>
+      <div class="ov-sub">a tiny machine that writes a cutecore song<br>and draws it while it plays</div>
+      <div class="ov-bar" id="ov-bar"><i></i></div>
+      <div class="ov-status" id="ov-status">PRESSING…</div>
+      <button class="ov-play" id="ov-play" disabled>▶ PLAY</button>
+      <div class="ov-hint">space play/pause · ← → bar · N new · T theme · drop an audio file to visualize it</div>
+    </div>
+  </div>
+
+  <script src="js/song.js"></script>
+  <script src="js/synth.js"></script>
+  <script src="js/analysis.js"></script>
+  <script src="js/panels.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

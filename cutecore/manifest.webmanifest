@@ -1,0 +1,16 @@
+{
+  "name": "cutecore",
+  "short_name": "cutecore",
+  "description": "Una macchina che compone musica cutecore e la disegna in tempo reale.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#e4e6e9",
+  "theme_color": "#e4e6e9",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
