@@ -59,8 +59,24 @@
 
       <!-- 03 ROLL -->
       <section class="panel p-roll">
-        <h2><b>03</b> ROLL</h2>
+        <div class="ph">
+          <h2><b>03</b> ROLL</h2>
+          <button class="tg pill" id="edit" aria-pressed="false" title="Modifica le note (E)">✎ EDIT</button>
+        </div>
         <div class="cv framed" data-cv="roll"></div>
+        <div class="insp" id="insp" hidden>
+          <div class="insp-top">
+            <button class="tg pill" data-ed="part" title="Scegli la parte da modificare"><i class="sw" id="ed-part-sw"></i><span id="ed-part">PART: BELL</span></button>
+            <span class="insp-note" id="insp-note"></span>
+          </div>
+          <div class="insp-btns">
+            <div class="grp"><span>PITCH</span><button class="tg" data-ed="p-1" aria-label="Semitono giù">−1</button><button class="tg" data-ed="p+1" aria-label="Semitono su">+1</button><button class="tg" data-ed="o-1" aria-label="Ottava giù">−8va</button><button class="tg" data-ed="o+1" aria-label="Ottava su">+8va</button></div>
+            <div class="grp"><span>MOVE</span><button class="tg" data-ed="m-" aria-label="Sposta indietro">◀</button><button class="tg" data-ed="m+" aria-label="Sposta avanti">▶</button></div>
+            <div class="grp"><span>LENGTH</span><button class="tg" data-ed="l-" aria-label="Più corta">−</button><button class="tg" data-ed="l+" aria-label="Più lunga">+</button></div>
+            <div class="grp"><span>VELOCITY</span><button class="tg" data-ed="v-" aria-label="Più piano">−</button><button class="tg" data-ed="v+" aria-label="Più forte">+</button></div>
+            <div class="grp"><button class="tg danger" data-ed="del">✕ DELETE</button></div>
+          </div>
+        </div>
         <dl class="stats">
           <div><dt>BAR</dt><dd data-stat="bar">1.1</dd></div>
           <div><dt>TEMPO</dt><dd data-stat="tempo">—</dd></div>
@@ -113,7 +129,54 @@
           <div><dt>SOUNDING</dt><dd data-stat="sounding2">—</dd></div>
         </dl>
       </section>
+      <!-- 07 MIXER -->
+      <section class="panel p-mixer">
+        <div class="ph">
+          <h2><b>07</b> MIXER</h2>
+          <button class="tg pill" id="mx-reset" title="Riporta il mixer ai valori iniziali">↺ RESET</button>
+        </div>
+        <div class="mx-global">
+          <label class="knob"><span>TEMPO <b id="v-tempo">112</b> BPM</span><input type="range" id="g-tempo" min="80" max="160" value="112"></label>
+          <label class="knob"><span>SWING <b id="v-swing">0%</b></span><input type="range" id="g-swing" min="0" max="50" value="0"></label>
+          <label class="knob"><span>MASTER <b id="v-master">100%</b></span><input type="range" id="g-master" min="0" max="120" value="100"></label>
+        </div>
+        <div class="mixer" id="mixer"></div>
+        <p class="file-note">Con un file audio caricato il mixer e l'editor sono spenti: funzionano sulle canzoni generate.</p>
+      </section>
+
+      <!-- 08 FX -->
+      <section class="panel p-fx">
+        <div class="ph">
+          <h2><b>08</b> FX GENERATOR</h2>
+          <span class="fx-id"><span id="fx-name">—</span> <em id="fx-seed"></em></span>
+        </div>
+        <div class="cv stage" data-cv="fx">
+          <button class="tg pill fx-exit" id="fx-exit">✕ CLOSE</button>
+        </div>
+        <div class="fx-actions">
+          <button class="tg pill strong" id="fx-gen" title="Nuova ricetta casuale (G)">✦ GENERATE</button>
+          <button class="tg pill" id="fx-overlay-btn" aria-pressed="false" title="Mostra gli effetti sopra tutta la pagina">◐ OVERLAY</button>
+          <button class="tg pill" id="fx-full" title="Effetti a tutto schermo (F)">⛶ STAGE</button>
+        </div>
+        <div class="fx-group"><span class="lbl2">LAYERS</span><div class="chips" id="fx-layers"></div></div>
+        <div class="fx-group"><span class="lbl2">POST</span><div class="chips" id="fx-posts"></div></div>
+        <div class="fx-group chips">
+          <button class="tg chipbtn" id="fx-shape">SHAPE</button>
+          <button class="tg chipbtn" id="fx-pal">COLORS</button>
+          <button class="tg chipbtn" id="fx-blend">BLEND</button>
+        </div>
+        <div class="fx-knobs">
+          <label class="knob"><span>INTENSITY</span><input type="range" id="fx-int" min="10" max="100" value="85"></label>
+          <label class="knob"><span>TRAILS</span><input type="range" id="fx-trail" min="0" max="100" value="60"></label>
+          <label class="knob"><span>SYMMETRY <b id="v-fx-sym">×4</b></span><input type="range" id="fx-sym" min="1" max="12" value="4"></label>
+          <label class="knob"><span>SPIN</span><input type="range" id="fx-spin" min="-50" max="50" value="0"></label>
+        </div>
+      </section>
     </main>
+
+    <div class="fx-overlay" id="fx-overlay" hidden aria-hidden="true"></div>
+    <div class="fx-flash" id="fx-flash" aria-hidden="true"></div>
+    <div class="fx-scan" id="fx-scan" hidden aria-hidden="true"></div>
 
     <footer class="transport">
       <button class="play" id="play" aria-label="Play">▶</button>
@@ -133,16 +196,16 @@
       <div class="ov-kao">(｡•ᴗ•｡)♡</div>
       <div class="ov-title">cutecore</div>
       <div class="ov-sub">a tiny machine that writes a cutecore song<br>and draws it while it plays</div>
-      <div class="ov-bar" id="ov-bar"><i></i></div>
-      <div class="ov-status" id="ov-status">PRESSING…</div>
+      <div class="ov-status" id="ov-status">…</div>
       <button class="ov-play" id="ov-play" disabled>▶ PLAY</button>
-      <div class="ov-hint">space play/pause · ← → bar · N new · T theme · drop an audio file to visualize it</div>
+      <div class="ov-hint">space play/pause · ← → bar · N new song · E edit notes · G new visuals · F stage · T theme<br>drop an audio file to visualize it</div>
     </div>
   </div>
 
   <script src="js/song.js"></script>
   <script src="js/synth.js"></script>
   <script src="js/analysis.js"></script>
+  <script src="js/fx.js"></script>
   <script src="js/panels.js"></script>
   <script src="js/main.js"></script>
 </body>

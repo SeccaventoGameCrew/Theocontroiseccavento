@@ -37,8 +37,9 @@
 
   // ---- canvas helper
   class Surface {
-    constructor(el) {
+    constructor(el, maxDpr) {
       this.el = el;
+      this.maxDpr = maxDpr || 2;
       this.c = document.createElement('canvas');
       el.appendChild(this.c);
       this.g = this.c.getContext('2d');
@@ -49,7 +50,7 @@
     }
     resize() {
       const r = this.el.getBoundingClientRect();
-      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const dpr = Math.min(this.maxDpr, window.devicePixelRatio || 1);
       this.w = Math.max(1, r.width); this.h = Math.max(1, r.height);
       this.c.width = Math.round(this.w * dpr); this.c.height = Math.round(this.h * dpr);
       this.g.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -325,20 +326,60 @@
   // 03 ROLL — scrolling piano roll
   // =====================================================================
   class Roll {
-    constructor(el) { this.s = new Surface(el); }
+    constructor(el) {
+      this.s = new Surface(el);
+      this.edit = false;
+      this.selected = null;
+      this.focusCh = 1;
+      this.geo = null;
+    }
+    editRange(tr) {
+      let lo = 127, hi = 0;
+      for (const n of tr.notes) if (n.ch === this.focusCh) { if (n.midi < lo) lo = n.midi; if (n.midi > hi) hi = n.midi; }
+      if (lo > hi) { lo = 60; hi = 72; }
+      lo -= 3; hi += 3;
+      while (hi - lo < 18) { lo--; hi++; }
+      return { lo: Math.max(12, lo), hi: Math.min(115, hi) };
+    }
+    // nearest note to a point (within slop px), honouring the focused part in edit mode
+    hitTest(x, y, tr) {
+      const G = this.geo;
+      if (!G || !tr) return null;
+      let best = null, bd = 12;
+      const notes = tr.notes;
+      for (let i = lowerBound(notes, G.left - 34); i < notes.length; i++) {
+        const n = notes[i];
+        if (n.step > G.left + G.view) break;
+        if (this.edit && n.ch !== this.focusCh) continue;
+        const x0 = (n.step - G.left) / G.view * G.w, x1 = Math.max(x0 + 4, (n.step + n.len - G.left) / G.view * G.w);
+        const yc = (G.hi - n.midi + 0.5) * G.rowH;
+        const dx = x < x0 ? x0 - x : x > x1 ? x - x1 : 0;
+        const dy = Math.max(0, Math.abs(y - yc) - G.rowH / 2);
+        const d = Math.hypot(dx, dy);
+        if (d < bd) { bd = d; best = n; }
+      }
+      return best;
+    }
+    cellAt(x, y) {
+      const G = this.geo;
+      return { step: Math.floor(G.left + x / G.w * G.view), midi: Math.round(G.hi - (y / G.rowH) + 0.5) };
+    }
     draw(S) {
       const { g, w, h } = this.s;
       this.s.clear();
       const tr = S.track;
       if (!tr) return;
-      const view = w < 500 ? 56 : 80;
+      const edit = this.edit;
+      const view = edit ? (w < 500 ? 32 : 48) : (w < 500 ? 56 : 80);
       const left = S.step - view * 0.32;
       const right = left + view;
-      const lo = tr.rollLo, hi = tr.rollHi;
+      let lo = tr.rollLo, hi = tr.rollHi;
+      if (edit) { const r = this.editRange(tr); lo = r.lo; hi = r.hi; }
       const rows = hi - lo + 1;
       const rowH = h / rows;
       const X = (st) => (st - left) / view * w;
       const Y = (m) => (hi - m) * rowH;
+      this.geo = { left, view, lo, hi, rowH, w, h };
       this.s.font(9);
       // pitch grid
       g.lineWidth = 0.5;
@@ -350,6 +391,9 @@
         if (isC && rowH * 12 > 18 && y > 22) {
           g.fillStyle = rgba(C.ink, 0.6);
           g.fillText('C' + (m / 12 - 1), 4, y - 2);
+        } else if (edit && rowH > 9 && y > 22 && m % 12 !== 0) {
+          g.fillStyle = rgba(C.muted, 0.7);
+          g.fillText(Song.noteName(m), 4, y - 2);
         }
       }
       // bar & beat lines
@@ -373,13 +417,28 @@
         const y = Y(n.midi) + (rowH - nh) / 2;
         const sounding = n.step <= S.step && end > S.step;
         const col = partColor(n.ch);
-        if (sounding) {
+        const dim = (edit && n.ch !== this.focusCh) || (S.audibleNote && !S.audibleNote(n));
+        if (dim) {
+          g.fillStyle = rgba(col, 0.18);
+          g.fillRect(x0, y, x1 - x0, nh);
+        } else if (sounding) {
           g.fillStyle = C.accent;
           g.fillRect(x0, y - 1, x1 - x0, nh + 2);
         } else {
           g.fillStyle = n.step > S.step ? rgba(col, 0.55) : col;
           g.fillRect(x0, y, x1 - x0, nh);
         }
+      }
+      // selected note
+      const sel = this.selected;
+      if (edit && sel && sel.step + sel.len >= left && sel.step <= right) {
+        const x0 = X(sel.step), x1 = Math.max(x0 + 3, X(sel.step + sel.len));
+        const y = Y(sel.midi);
+        g.strokeStyle = C.ink;
+        g.lineWidth = 1.5;
+        g.strokeRect(x0 - 2, y - 2, x1 - x0 + 4, rowH + 4);
+        g.fillStyle = C.accent;
+        g.fillRect(x0, y + (rowH - nh) / 2, x1 - x0, nh);
       }
       // drum ticks along the bottom
       let j = lowerBound(tr.hits, left);
@@ -742,5 +801,5 @@
     }
   }
 
-  root.Panels = { Sheet, Wave, Scope, Spectrum, Vector, Roll, Roots, Fountain, Orbit, readTheme, partColor, lowerBound, C, rgba };
+  root.Panels = { Surface, Sheet, Wave, Scope, Spectrum, Vector, Roll, Roots, Fountain, Orbit, readTheme, partColor, lowerBound, C, rgba };
 })(window);

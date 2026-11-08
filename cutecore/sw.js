@@ -1,6 +1,6 @@
 /* cutecore — offline cache (network first, cache fallback). */
-const CACHE = 'cutecore-v1';
-const ASSETS = ['./', 'index.html', 'css/style.css', 'js/song.js', 'js/synth.js', 'js/analysis.js', 'js/panels.js', 'js/main.js', 'icon.svg', 'icon-192.png', 'manifest.webmanifest'];
+const CACHE = 'cutecore-v2';
+const ASSETS = ['./', 'index.html', 'css/style.css', 'js/song.js', 'js/fx.js', 'js/synth.js', 'js/analysis.js', 'js/panels.js', 'js/main.js', 'icon.svg', 'icon-192.png', 'manifest.webmanifest'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', (e) => {

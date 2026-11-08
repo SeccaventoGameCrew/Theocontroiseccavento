@@ -35,9 +35,14 @@ Nella cartella [`cutecore/`](cutecore/) c'è un'app web (installabile sul telefo
 | 05 FOUNTAIN | fontana di particelle guidata dai canali sinistro/destro |
 | 06 ORBIT | un giro per battuta: le note diventano archi attorno all'orologio |
 
+| 07 MIXER | per ogni strumento: muto (M), solo (S), volume, timbro (TONE), coda (DECAY), riverbero (SPACE), trasporto ♭ ♯ ±8va; per la batteria si spengono KICK / SNARE / HAT / FX. Più TEMPO, SWING e MASTER |
+| 08 FX GENERATOR | genera ricette di effetti visuali a tempo di musica (tunnel, anelli, raggi, forme, glitter, onda, griglia) con simmetria, colori, scie, rotazione, e post-effetti sulla pagina (shake, zoom, RGB split, flash, scanlines). OVERLAY li sovrappone a tutta la dashboard, STAGE li mostra a schermo intero |
+
+**Modificare le note:** nel pannello ROLL premi **✎ EDIT**, scegli la parte (PART), tocca una nota per selezionarla (la senti subito) e cambiala con PITCH ±1 / ±8va, MOVE ◀ ▶, LENGTH, VELOCITY o DELETE. Tocca uno spazio vuoto per aggiungere una nota. Da fermo puoi trascinare il roll per spostarti nel brano.
+
 - **▶** play/pausa · **↻ NEW** genera una nuova canzone (seed nell'URL, es. `#seed=112`) · **⤒ LOAD** visualizza un tuo file audio (tempo, note e colpi vengono stimati automaticamente) · **◎ LAB / ♡ KAWAII** cambia tema.
-- Tastiera: `spazio` play/pausa, `← →` una battuta, `N` nuova canzone, `T` tema, `P` penna. Si può anche trascinare un file audio sulla pagina.
-- La musica è sintetizzata nel browser (Web Audio): campanelle FM tipo carillon, arpeggi, accordi "future bass" con sidechain, sub bass, batteria.
+- Tastiera: `spazio` play/pausa, `← →` una battuta, `N` nuova canzone, `E` modifica note (poi `↑ ↓ ← →` e `Canc` sulla nota selezionata), `G` nuovi effetti, `F` stage, `T` tema, `P` penna. Si può anche trascinare un file audio sulla pagina.
+- La musica è sintetizzata dal vivo nel browser (Web Audio), quindi ogni modifica si sente subito: campanelle FM tipo carillon, arpeggi, accordi "future bass" con sidechain, sub bass, batteria.
 
 Con GitHub Pages attivo l'app è su `https://<nome-utente>.github.io/<nome-repo>/cutecore/`.
 In locale: `cd cutecore && python3 -m http.server` e apri `http://localhost:8000`.

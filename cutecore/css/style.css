@@ -12,6 +12,8 @@
   --accent3: #7aa0f0;
   --soft: #9fb8ea;
   --line: #c9cdd3;
+  --stage: #0c1020;
+  --stage2: #1a2244;
   --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --display: var(--mono);
   --radius: 0px;
@@ -29,6 +31,8 @@
   --accent3: #b79bff;
   --soft: #ffb3d4;
   --line: #f4cfe1;
+  --stage: #24112b;
+  --stage2: #4a2150;
   --display: "Mochiy Pop One", var(--mono);
   --radius: 14px;
   --pattern:
@@ -75,9 +79,13 @@ button, .btn, input { font: inherit; color: inherit; }
     "sheet meters"
     "roll roll"
     "roots orbit"
-    "fountain orbit";
+    "fountain orbit"
+    "mixer mixer"
+    "fx fx";
   gap: 18px 16px;
 }
+.p-mixer { grid-area: mixer; }
+.p-fx { grid-area: fx; }
 .p-sheet { grid-area: sheet; }
 .p-meters { grid-area: meters; }
 .p-roll { grid-area: roll; }
@@ -214,9 +222,12 @@ button:focus-visible, .btn:focus-within, #scrub:focus-visible { outline: 2px sol
     grid-template-areas:
       "sheet meters meters"
       "roll roll orbit"
-      "roots fountain orbit";
+      "roots fountain orbit"
+      "mixer mixer fx";
     gap: 26px 26px;
   }
+  .mixer { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stage { aspect-ratio: auto; height: 300px; }
   .p-sheet .cv { min-height: 200px; }
   .box-wave .cv { height: 70px; }
   .trio .cv { aspect-ratio: auto; height: 120px; }
@@ -230,6 +241,97 @@ button:focus-visible, .btn:focus-within, #scrub:focus-visible { outline: 2px sol
   .key { font-size: 9px; }
 }
 
+/* ---------- shared controls */
+[hidden] { display: none !important; }
+.ph { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; min-width: 0; }
+.ph h2 { margin: 0; }
+.tg {
+  border: 1px solid var(--grid); background: var(--paper); color: var(--ink);
+  font: inherit; font-size: 9px; letter-spacing: .08em; padding: 5px 7px; cursor: pointer;
+  border-radius: calc(var(--radius) / 2); white-space: nowrap; line-height: 1.2;
+  touch-action: manipulation;
+}
+.tg:hover { border-color: var(--ink); }
+.tg[aria-pressed="true"], .tg.on { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.tg.pill { border-color: var(--ink); display: inline-flex; align-items: center; gap: 5px; }
+.tg.strong { background: var(--accent); border-color: var(--accent); color: #fff; }
+.tg.danger { border-color: #c4314b; color: #c4314b; }
+.tg .sw, .mx-head .sw { width: 8px; height: 8px; display: inline-block; flex: none; border-radius: calc(var(--radius) / 3); }
+.knob { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.knob span { font-size: 7.5px; letter-spacing: .12em; color: var(--muted); white-space: nowrap; }
+.knob span b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.knob input { width: 100%; margin: 0; accent-color: var(--accent); height: 18px; }
+.lbl2 { font-size: 7.5px; letter-spacing: .12em; color: var(--muted); }
+
+/* ---------- roll editor */
+body.editing .p-roll .cv { height: 230px; }
+body.editing .p-roll .cv canvas { cursor: crosshair; }
+.p-roll .cv { touch-action: pan-y; }
+body.is-file #edit { display: none; }
+.insp { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; padding: 8px; border: 1px dashed var(--grid); border-radius: calc(var(--radius) / 2); }
+.insp-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.insp-note { font-size: 10px; font-variant-numeric: tabular-nums; min-width: 0; }
+.insp:not(.has-sel) .insp-note { color: var(--muted); }
+.insp-btns { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.insp:not(.has-sel) .insp-btns { opacity: .35; pointer-events: none; }
+.grp { display: flex; align-items: center; gap: 4px; }
+.grp > span { font-size: 7.5px; letter-spacing: .12em; color: var(--muted); margin-right: 2px; }
+
+/* ---------- mixer */
+.mx-global { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 14px; margin-bottom: 10px; }
+.mixer { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px 22px; }
+.mx-row { display: flex; flex-direction: column; gap: 6px; padding: 8px 0; border-top: 1px solid var(--line); min-width: 0; transition: opacity .2s; }
+.mx-row.silent { opacity: .45; }
+.mx-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.mx-head .nm { font-size: 10px; letter-spacing: .1em; min-width: 54px; }
+.mx-head .chn { font-size: 8px; color: var(--muted); letter-spacing: .1em; margin-right: auto; }
+.mx-head .extra { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+.mx-head .tg.m[aria-pressed="true"] { background: #c4314b; border-color: #c4314b; color: #fff; }
+.mx-head .tg.s[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.mx-head .tg.pc:not(.on) { text-decoration: line-through; color: var(--muted); }
+.mx-knobs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px 12px; }
+.file-note { display: none; margin: 8px 0 0; color: var(--muted); font-size: 10px; }
+body.is-file .p-mixer .mixer, body.is-file .p-mixer .mx-global { opacity: .35; pointer-events: none; }
+body.is-file .file-note { display: block; }
+
+/* ---------- FX generator */
+.fx-id { font-size: 10px; letter-spacing: .06em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.fx-id em { font-style: normal; color: var(--muted); }
+.stage {
+  aspect-ratio: 16 / 10; min-height: 0; max-width: 100%; border-radius: calc(var(--radius) / 2); overflow: hidden;
+  background: radial-gradient(ellipse at center, var(--stage2) 0%, var(--stage) 75%);
+}
+.fx-actions, .fx-group { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; }
+.fx-group .lbl2 { width: 52px; flex: none; }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; min-width: 0; flex: 1; }
+.fx-knobs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px 12px; margin-top: 10px; }
+.fx-exit { position: absolute; z-index: 2; top: calc(12px + env(safe-area-inset-top, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); display: none; background: rgba(0,0,0,.4); color: #fff; border-color: rgba(255,255,255,.5); }
+body.stage-full .p-fx .stage {
+  position: fixed; inset: 0; z-index: 40; aspect-ratio: auto; height: auto; border-radius: 0;
+}
+.p-fx .tg.fx-exit { display: none; }
+body.stage-full .p-fx .tg.fx-exit { display: inline-flex; }
+body.stage-full { overflow: hidden; }
+
+.fx-overlay { position: fixed; inset: 0; z-index: 4; pointer-events: none; opacity: .9; }
+.fx-overlay canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.fx-flash { position: fixed; inset: 0; z-index: 3; pointer-events: none; background: var(--accent); opacity: 0; }
+.fx-scan {
+  position: fixed; inset: 0; z-index: 4; pointer-events: none; opacity: .5;
+  background: repeating-linear-gradient(to bottom, rgba(0,0,0,.08) 0 1px, transparent 1px 3px);
+  animation: scan 6s linear infinite;
+}
+@keyframes scan { from { background-position: 0 0; } to { background-position: 0 120px; } }
+.board { transform-origin: 50% 30%; }
+.board.fx-rgb canvas { filter: drop-shadow(2px 0 rgba(255, 0, 90, .55)) drop-shadow(-2px 0 rgba(0, 220, 255, .55)); }
+
+@media (max-width: 420px) {
+  .mx-knobs, .fx-knobs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mx-global { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .insp-btns { gap: 6px 10px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .fx-scan { animation: none; }
   .kao.bop { animation: none; }
 }
