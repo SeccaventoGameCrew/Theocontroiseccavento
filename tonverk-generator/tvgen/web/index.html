@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tonverk Song Generator</title>
+<style>
+:root{--bg:#f6f5f2;--fg:#191919;--muted:#6b6b6b;--line:#dcd9d2;--card:#fff;--acc:#d9480f;--acc-fg:#fff;--warn:#b35c00}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#121212;--fg:#ececec;--muted:#9a9a9a;--line:#2c2c2c;--card:#1b1b1b;--acc:#ff8a4c;--acc-fg:#121212;--warn:#ffb057}}
+:root[data-theme=dark]{--bg:#121212;--fg:#ececec;--muted:#9a9a9a;--line:#2c2c2c;--card:#1b1b1b;--acc:#ff8a4c;--acc-fg:#121212;--warn:#ffb057}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:1040px;margin:0 auto;padding:32px 16px 64px}
+h1{font-size:24px;letter-spacing:.06em;margin:0}
+.sub{color:var(--muted);margin:4px 0 24px}
+label{display:block;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px}
+textarea,input,select{width:100%;font:inherit;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+textarea{min-height:110px;resize:vertical}
+.row{display:grid;grid-template-columns:1fr 200px;gap:12px}
+@media (max-width:640px){.row{grid-template-columns:1fr}}
+button{font:inherit;font-weight:600;border:0;border-radius:8px;padding:11px 18px;background:var(--acc);color:var(--acc-fg);cursor:pointer}
+button[disabled]{opacity:.5;cursor:wait}
+.actions{display:flex;gap:12px;align-items:center;margin-top:18px;flex-wrap:wrap}
+.hint{color:var(--muted);font-size:13px}
+.ex{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.ex button{background:transparent;color:var(--fg);border:1px solid var(--line);font-weight:400;padding:5px 10px;font-size:13px}
+#result{display:none;margin-top:32px}
+.summary{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px 16px}
+.summary h2{margin:0 0 4px;font-size:20px}
+.links{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 0}
+.links a{color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:6px 10px;text-decoration:none;font-size:14px}
+.links a.main{background:var(--acc);color:var(--acc-fg);border-color:var(--acc)}
+.warn{color:var(--warn);font-size:13px;margin:8px 0 0;padding-left:18px}
+iframe{width:100%;height:900px;border:1px solid var(--line);border-radius:8px;margin-top:16px;background:var(--bg)}
+.err{color:var(--warn);margin-top:12px;white-space:pre-wrap}
+</style>
+</head>
+<body>
+<main>
+  <h1>TONVERK SONG GENERATOR</h1>
+  <p class="sub">Descrivi la canzone: genero pattern, trig e arrangiamento di un progetto per il Tonverk.</p>
+
+  <label for="prompt">Che canzone vuoi?</label>
+  <textarea id="prompt" placeholder="Es: una traccia techno ipnotica a 132 bpm in la minore, intro lunga, break con pad e un ritornello con arpeggio acido. Circa 5 minuti."></textarea>
+  <div class="ex" id="examples"></div>
+
+  <div class="row">
+    <div>
+      <label for="template">Progetto template (cartella copiata dalla scheda SD)</label>
+      <input id="template" placeholder="/Volumes/TONVERK/…/TEMPLATE">
+    </div>
+    <div>
+      <label for="engine">Compositore</label>
+      <select id="engine">
+        <option value="auto">Automatico</option>
+        <option value="claude">Claude (API)</option>
+        <option value="offline">Offline (regole)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button id="go">Genera la canzone</button>
+    <span class="hint" id="status"></span>
+  </div>
+  <div class="err" id="err"></div>
+
+  <section id="result">
+    <div class="summary">
+      <h2 id="r-title"></h2>
+      <div class="hint" id="r-meta"></div>
+      <div class="links" id="r-links"></div>
+      <ul class="warn" id="r-warn"></ul>
+      <label for="revise">Modifica (Claude)</label>
+      <div class="row">
+        <input id="revise" placeholder="Es: ritornello più energico, basso più semplice, aggiungi un break">
+        <button id="rev">Rigenera</button>
+      </div>
+    </div>
+    <iframe id="sheet" title="Arrangiamento"></iframe>
+  </section>
+</main>
+<script>
+const $ = s => document.querySelector(s);
+const EX = [
+  "Techno ipnotica a 132 bpm in la minore, 5 minuti",
+  "Lofi hip hop malinconico, rhodes e basso caldo, 84 bpm",
+  "House anni 90 con piano e organo, in fa minore",
+  "Synthwave notturna in re minore con arpeggio e pad larghi",
+  "Drum and bass liquid a 174 bpm, atmosfera sognante",
+];
+EX.forEach(t => { const b = document.createElement("button"); b.textContent = t; b.onclick = () => $("#prompt").value = t; $("#examples").appendChild(b); });
+
+let lastSong = null;
+try { $("#template").value = localStorage.getItem("tvgen.template") || ""; } catch (e) {}
+
+fetch("/api/status").then(r => r.json()).then(s => {
+  if (s.template && !$("#template").value) $("#template").value = s.template;
+  $("#status").textContent = s.claude ? "Claude disponibile" : "Nessuna chiave API: verrà usato il compositore offline";
+});
+
+async function run(body) {
+  $("#err").textContent = "";
+  $("#go").disabled = $("#rev").disabled = true;
+  const t0 = Date.now();
+  const tick = setInterval(() => $("#status").textContent = `Compongo… ${Math.round((Date.now() - t0) / 1000)} s`, 500);
+  try {
+    try { localStorage.setItem("tvgen.template", $("#template").value); } catch (e) {}
+    const r = await fetch("/api/generate", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || "errore");
+    lastSong = d.song;
+    show(d);
+    $("#status").textContent = `Fatto in ${Math.round((Date.now() - t0) / 1000)} s (${d.engine})`;
+  } catch (e) {
+    $("#err").textContent = "Errore: " + e.message;
+    $("#status").textContent = "";
+  } finally {
+    clearInterval(tick);
+    $("#go").disabled = $("#rev").disabled = false;
+  }
+}
+
+function show(d) {
+  $("#result").style.display = "block";
+  $("#r-title").textContent = d.title;
+  const m = Math.floor(d.duration / 60), s = String(d.duration % 60).padStart(2, "0");
+  $("#r-meta").textContent = `${d.bpm} BPM · ${d.key} ${d.scale.replace("_", " ")} · ${d.patterns} pattern · ${m}:${s}`;
+  const links = $("#r-links"); links.innerHTML = "";
+  const add = (href, text, cls) => { const a = document.createElement("a"); a.href = href; a.textContent = text; if (cls) a.className = cls; links.appendChild(a); };
+  add(d.zip, d.project ? "Scarica progetto (.zip)" : "Scarica MIDI e arrangiamento (.zip)", "main");
+  add(d.preview, "Anteprima MIDI");
+  add(d.sheet, "Apri arrangiamento");
+  const w = $("#r-warn"); w.innerHTML = "";
+  (d.warnings || []).forEach(x => { const li = document.createElement("li"); li.textContent = x; w.appendChild(li); });
+  $("#sheet").src = d.sheet;
+}
+
+$("#go").onclick = () => run({prompt: $("#prompt").value, template: $("#template").value, engine: $("#engine").value});
+$("#rev").onclick = () => { if (lastSong && $("#revise").value.trim()) run({song: lastSong, revise: $("#revise").value, template: $("#template").value}); };
+</script>
+</body>
+</html>

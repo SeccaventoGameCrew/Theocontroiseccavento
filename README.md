@@ -18,3 +18,9 @@ https://<nome-utente>.github.io/<nome-repo>/
 
 - Frecce sinistra/destra: muovi Theo
 - Freccia su: salta
+
+## Tonverk Song Generator
+
+La cartella [`tonverk-generator/`](tonverk-generator/README.md) contiene un generatore di
+progetti per Elektron Tonverk: descrivi una canzone a parole e ottieni pattern, trig e
+arrangiamento pronti da caricare sulla macchina.
