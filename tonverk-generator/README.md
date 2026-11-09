@@ -29,7 +29,44 @@ tvgen "techno ipnotica a 132 bpm in la minore, intro lunga, break con pad, 5 min
    con le stesse opzioni del firmware (SST format_version 5, checksum XXH3, Snappy) e riletto
    byte per byte per verifica.
 
-## Installazione
+## App per Mac
+
+**Tonverk Generator.app** è un'app macOS (Apple Silicon e Intel, macOS 11+) con finestra
+nativa: scrivi il prompt, scegli la cartella del template con il selettore del Finder, genera,
+**ascolta subito l'anteprima** con il sintetizzatore integrato (barra dell'arrangiamento
+cliccabile, spazio = play/stop) e con **Copia sulla scheda SD** il progetto finisce accanto al
+template sulla scheda. La chiave API di Claude si inserisce in *Impostazioni* e viene salvata
+nel Portachiavi di macOS. Le canzoni generate restano in `~/Musica/Tonverk Generator` e sono
+riapribili dalla lista *Recenti*.
+
+### Scaricarla
+
+L'app viene compilata automaticamente da GitHub Actions su un Mac (workflow
+*Tonverk Generator - app macOS*): apri l'ultima esecuzione nella scheda **Actions** del
+repository e scarica l'artifact `TonverkGenerator-macOS-arm64` (Mac con chip Apple) oppure
+`TonverkGenerator-macOS-x86_64` (Mac Intel). Con un tag `tvgen-v…` i `.dmg` vengono anche
+pubblicati in una Release.
+
+Apri il `.dmg` e trascina l'app in *Applicazioni*. L'app non è firmata con un certificato
+Apple Developer, quindi al primo avvio macOS la blocca: fai **clic destro → Apri**, oppure vai in
+*Impostazioni di Sistema → Privacy e sicurezza* e premi **Apri comunque**. In alternativa, da
+Terminale: `xattr -dr com.apple.quarantine "/Applications/Tonverk Generator.app"`.
+
+### Compilarla sul tuo Mac
+
+Serve Python 3.10+ (es. `brew install python@3.12`):
+
+```bash
+cd tonverk-generator
+PYTHON=python3.12 ./macapp/build.sh
+open "dist/Tonverk Generator.app"
+```
+
+Lo script crea un ambiente isolato, l'icona, l'app (PyInstaller), la firma ad-hoc, esegue un
+autotest dell'app compilata e produce `dist/TonverkGenerator-<versione>-<arch>.dmg`.
+Il log dell'app è in `~/Library/Logs/Tonverk Generator.log`.
+
+## Installazione da riga di comando
 
 Serve Python 3.10 o successivo.
 

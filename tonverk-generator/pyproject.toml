@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tonverk-generator"
-version = "0.1.0"
+version = "0.2.0"
 description = "Genera progetti per Elektron Tonverk da una descrizione testuale della canzone"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -16,9 +16,11 @@ dependencies = [
 
 [project.optional-dependencies]
 test = ["pytest>=8"]
+mac = ["pywebview>=6; sys_platform == 'darwin'"]
 
 [project.scripts]
 tvgen = "tvgen.cli:main"
+tvgen-app = "tvgen.macapp:main"
 
 [tool.setuptools.packages.find]
 include = ["tvgen*"]

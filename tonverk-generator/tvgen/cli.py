@@ -80,7 +80,7 @@ def _cmd_web(a) -> int:
 
 def main(argv=None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
-    if argv and argv[0] not in ("generate", "inspect", "layout", "web", "-h", "--help"):
+    if argv and argv[0] not in ("generate", "inspect", "layout", "web", "app", "-h", "--help"):
         argv.insert(0, "generate")
     ap = argparse.ArgumentParser(prog="tvgen", description="Generatore di progetti per Elektron Tonverk")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -117,6 +117,9 @@ def main(argv=None) -> int:
     w.add_argument("--out", "-o", default="output")
     w.add_argument("--template", "-t")
     w.set_defaults(func=_cmd_web)
+
+    m = sub.add_parser("app", help="apre l'app desktop (macOS, richiede pywebview)")
+    m.set_defaults(func=lambda a: __import__("tvgen.macapp", fromlist=["main"]).main([]))
 
     a = ap.parse_args(argv)
     try:

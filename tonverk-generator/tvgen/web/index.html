@@ -3,42 +3,80 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Tonverk Song Generator</title>
+<title>Tonverk Generator</title>
 <style>
-:root{--bg:#f6f5f2;--fg:#191919;--muted:#6b6b6b;--line:#dcd9d2;--card:#fff;--acc:#d9480f;--acc-fg:#fff;--warn:#b35c00}
-@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#121212;--fg:#ececec;--muted:#9a9a9a;--line:#2c2c2c;--card:#1b1b1b;--acc:#ff8a4c;--acc-fg:#121212;--warn:#ffb057}}
-:root[data-theme=dark]{--bg:#121212;--fg:#ececec;--muted:#9a9a9a;--line:#2c2c2c;--card:#1b1b1b;--acc:#ff8a4c;--acc-fg:#121212;--warn:#ffb057}
+:root{--bg:#f6f5f2;--fg:#191919;--muted:#6b6b6b;--line:#dcd9d2;--card:#fff;--soft:#ebe8e1;--acc:#d9480f;--acc-fg:#fff;--warn:#b35c00;--ok:#2b8a3e}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#121212;--fg:#ececec;--muted:#9a9a9a;--line:#2c2c2c;--card:#1b1b1b;--soft:#262626;--acc:#ff8a4c;--acc-fg:#121212;--warn:#ffb057;--ok:#69db7c}}
+:root[data-theme=dark]{--bg:#121212;--fg:#ececec;--muted:#9a9a9a;--line:#2c2c2c;--card:#1b1b1b;--soft:#262626;--acc:#ff8a4c;--acc-fg:#121212;--warn:#ffb057;--ok:#69db7c}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
-main{max-width:1040px;margin:0 auto;padding:32px 16px 64px}
-h1{font-size:24px;letter-spacing:.06em;margin:0}
-.sub{color:var(--muted);margin:4px 0 24px}
-label{display:block;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px}
-textarea,input,select{width:100%;font:inherit;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
-textarea{min-height:110px;resize:vertical}
-.row{display:grid;grid-template-columns:1fr 200px;gap:12px}
-@media (max-width:640px){.row{grid-template-columns:1fr}}
-button{font:inherit;font-weight:600;border:0;border-radius:8px;padding:11px 18px;background:var(--acc);color:var(--acc-fg);cursor:pointer}
-button[disabled]{opacity:.5;cursor:wait}
+html,body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text",ui-sans-serif,system-ui,sans-serif}
+body{-webkit-user-select:none;user-select:none}
+textarea,input{-webkit-user-select:text;user-select:text}
+main{max-width:1060px;margin:0 auto;padding:28px 20px 64px}
+header{display:flex;align-items:center;gap:12px;justify-content:space-between}
+h1{font-size:20px;letter-spacing:.1em;margin:0}
+.sub{color:var(--muted);margin:2px 0 20px;font-size:14px}
+label{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px}
+textarea,input,select{width:100%;font:inherit;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px;outline:none}
+textarea:focus,input:focus,select:focus{border-color:var(--acc)}
+textarea{min-height:104px;resize:vertical}
+.row{display:grid;grid-template-columns:1fr 190px;gap:12px}
+.pick{display:grid;grid-template-columns:1fr auto;gap:8px}
+@media (max-width:680px){.row{grid-template-columns:1fr}}
+button{font:inherit;font-weight:600;border:0;border-radius:8px;padding:10px 16px;background:var(--acc);color:var(--acc-fg);cursor:pointer;white-space:nowrap}
+button.ghost{background:transparent;color:var(--fg);border:1px solid var(--line);font-weight:500}
+button.icon{background:transparent;color:var(--muted);border:1px solid var(--line);padding:7px 11px;font-weight:500}
+button[disabled]{opacity:.5;cursor:default}
 .actions{display:flex;gap:12px;align-items:center;margin-top:18px;flex-wrap:wrap}
 .hint{color:var(--muted);font-size:13px}
+.tstatus{font-size:13px;margin-top:6px;color:var(--muted)}.tstatus.ok{color:var(--ok)}.tstatus.bad{color:var(--warn)}
 .ex{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-.ex button{background:transparent;color:var(--fg);border:1px solid var(--line);font-weight:400;padding:5px 10px;font-size:13px}
-#result{display:none;margin-top:32px}
-.summary{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px 16px}
-.summary h2{margin:0 0 4px;font-size:20px}
-.links{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 0}
-.links a{color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:6px 10px;text-decoration:none;font-size:14px}
-.links a.main{background:var(--acc);color:var(--acc-fg);border-color:var(--acc)}
-.warn{color:var(--warn);font-size:13px;margin:8px 0 0;padding-left:18px}
-iframe{width:100%;height:900px;border:1px solid var(--line);border-radius:8px;margin-top:16px;background:var(--bg)}
+.ex button{background:transparent;color:var(--fg);border:1px solid var(--line);font-weight:400;padding:4px 10px;font-size:13px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+#settings{display:none;margin-top:16px}
+#result{display:none;margin-top:28px}
+.summary h2{margin:0 0 2px;font-size:22px;letter-spacing:.03em}
+.links{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 0}
+.links a,.links button{font-size:14px;padding:7px 12px}
+.links a{color:var(--fg);border:1px solid var(--line);border-radius:8px;text-decoration:none}
+.links .main{background:var(--acc);color:var(--acc-fg);border:1px solid var(--acc)}
+.warn{color:var(--warn);font-size:13px;margin:10px 0 0;padding-left:18px}
 .err{color:var(--warn);margin-top:12px;white-space:pre-wrap}
+/* player */
+.player{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;margin-top:16px}
+.play{width:44px;height:44px;border-radius:50%;padding:0;display:grid;place-items:center}
+.play svg{width:18px;height:18px;fill:currentColor}
+.bar{position:relative;height:40px;border-radius:6px;overflow:hidden;background:var(--soft);cursor:pointer}
+.seg{position:absolute;top:0;bottom:0;border-right:1px solid var(--card);display:flex;align-items:center;padding-left:6px;font-size:11px;font-weight:600;color:#fff;overflow:hidden;white-space:nowrap}
+.head{position:absolute;top:0;bottom:0;width:2px;background:var(--fg);left:0;pointer-events:none}
+.time{font-variant-numeric:tabular-nums;font-size:13px;color:var(--muted);min-width:110px;text-align:right}
+.now{font-size:13px;color:var(--muted);margin-top:6px;min-height:20px}
+iframe{width:100%;height:900px;border:1px solid var(--line);border-radius:10px;margin-top:16px;background:var(--bg)}
+/* history */
+#history{margin-top:36px}
+#history ul{list-style:none;padding:0;margin:0}
+#history li{display:flex;justify-content:space-between;gap:12px;padding:9px 2px;border-bottom:1px solid var(--line);cursor:pointer}
+#history li:hover{color:var(--acc)}
+#history li span:last-child{color:var(--muted);font-size:13px;white-space:nowrap}
 </style>
 </head>
 <body>
 <main>
-  <h1>TONVERK SONG GENERATOR</h1>
+  <header>
+    <h1>TONVERK GENERATOR</h1>
+    <button class="icon" id="btn-settings" title="Impostazioni">Impostazioni</button>
+  </header>
   <p class="sub">Descrivi la canzone: genero pattern, trig e arrangiamento di un progetto per il Tonverk.</p>
+
+  <section class="card" id="settings">
+    <label for="apikey">Chiave API Anthropic (per comporre con Claude)</label>
+    <div class="pick">
+      <input id="apikey" type="password" placeholder="sk-ant-…" autocomplete="off">
+      <button id="savekey">Salva</button>
+    </div>
+    <div class="hint" id="keyhint"></div>
+    <div class="hint" id="outhint" style="margin-top:8px"></div>
+  </section>
 
   <label for="prompt">Che canzone vuoi?</label>
   <textarea id="prompt" placeholder="Es: una traccia techno ipnotica a 132 bpm in la minore, intro lunga, break con pad e un ritornello con arpeggio acido. Circa 5 minuti."></textarea>
@@ -46,8 +84,12 @@ iframe{width:100%;height:900px;border:1px solid var(--line);border-radius:8px;ma
 
   <div class="row">
     <div>
-      <label for="template">Progetto template (cartella copiata dalla scheda SD)</label>
-      <input id="template" placeholder="/Volumes/TONVERK/…/TEMPLATE">
+      <label for="template">Progetto template (salvato sul Tonverk, con i suoni)</label>
+      <div class="pick">
+        <input id="template" placeholder="/Volumes/TONVERK/…/TEMPLATE" spellcheck="false">
+        <button class="ghost" id="pick" hidden>Scegli…</button>
+      </div>
+      <div class="tstatus" id="tstatus"></div>
     </div>
     <div>
       <label for="engine">Compositore</label>
@@ -66,52 +108,112 @@ iframe{width:100%;height:900px;border:1px solid var(--line);border-radius:8px;ma
   <div class="err" id="err"></div>
 
   <section id="result">
-    <div class="summary">
+    <div class="card summary">
       <h2 id="r-title"></h2>
       <div class="hint" id="r-meta"></div>
+      <div class="player">
+        <button class="play" id="play" title="Ascolta (spazio)" aria-label="Ascolta"></button>
+        <div class="bar" id="bar"><div class="head" id="head"></div></div>
+        <div class="time" id="time">0:00 / 0:00</div>
+      </div>
+      <div class="now" id="now">Anteprima con suoni sintetici: sulla macchina suonerà con i suoni del template.</div>
       <div class="links" id="r-links"></div>
       <ul class="warn" id="r-warn"></ul>
-      <label for="revise">Modifica (Claude)</label>
-      <div class="row">
+      <label for="revise">Modifica con Claude</label>
+      <div class="pick">
         <input id="revise" placeholder="Es: ritornello più energico, basso più semplice, aggiungi un break">
         <button id="rev">Rigenera</button>
       </div>
     </div>
     <iframe id="sheet" title="Arrangiamento"></iframe>
   </section>
+
+  <section id="history" hidden>
+    <label>Recenti</label>
+    <ul id="hlist"></ul>
+  </section>
 </main>
 <script>
+const TOKEN = "__TVGEN_TOKEN__";
+const APP = __TVGEN_APP__;
 const $ = s => document.querySelector(s);
-const EX = [
+const COLORS = ["#d9480f","#c2255c","#9c36b5","#5f3dc4","#1971c2","#0c8599","#2b8a3e","#e67700"];
+const ICON_PLAY = '<svg viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></svg>';
+const ICON_STOP = '<svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>';
+let state = {status: null, last: null};
+
+const api = (path, body) => fetch(path, {
+  method: body ? "POST" : "GET",
+  headers: Object.assign({"X-TVGen-Token": TOKEN}, body ? {"Content-Type": "application/json"} : {}),
+  body: body ? JSON.stringify(body) : undefined,
+}).then(async r => { const d = await r.json(); if (!r.ok) throw new Error(d.error || "errore"); return d; });
+
+const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+
+/* ------------------------------------------------------------ examples */
+[
   "Techno ipnotica a 132 bpm in la minore, 5 minuti",
   "Lofi hip hop malinconico, rhodes e basso caldo, 84 bpm",
   "House anni 90 con piano e organo, in fa minore",
   "Synthwave notturna in re minore con arpeggio e pad larghi",
   "Drum and bass liquid a 174 bpm, atmosfera sognante",
-];
-EX.forEach(t => { const b = document.createElement("button"); b.textContent = t; b.onclick = () => $("#prompt").value = t; $("#examples").appendChild(b); });
+].forEach(t => { const b = document.createElement("button"); b.textContent = t; b.onclick = () => $("#prompt").value = t; $("#examples").appendChild(b); });
 
-let lastSong = null;
-try { $("#template").value = localStorage.getItem("tvgen.template") || ""; } catch (e) {}
-
-fetch("/api/status").then(r => r.json()).then(s => {
+/* ------------------------------------------------------------ status / settings */
+async function loadStatus() {
+  const s = state.status = await api("/api/status");
   if (s.template && !$("#template").value) $("#template").value = s.template;
-  $("#status").textContent = s.claude ? "Claude disponibile" : "Nessuna chiave API: verrà usato il compositore offline";
-});
+  $("#engine").value = s.engine || "auto";
+  $("#status").textContent = s.claude ? "" : "Nessuna chiave API: verrà usato il compositore offline (Impostazioni per aggiungerla)";
+  $("#keyhint").textContent = s.key_hint ? `Chiave attiva: ${s.key_hint}` + (s.mac ? " — salvata nel Portachiavi" : "")
+    : (s.mac ? "La chiave viene salvata nel Portachiavi di macOS." : "Fuori da macOS imposta la variabile ANTHROPIC_API_KEY.");
+  $("#outhint").textContent = `Le canzoni generate sono salvate in ${s.out_root}`;
+  checkTemplate();
+  loadHistory();
+}
+$("#btn-settings").onclick = () => { const el = $("#settings"); el.style.display = el.style.display === "block" ? "none" : "block"; };
+$("#savekey").onclick = async () => {
+  try {
+    const r = await api("/api/settings", {api_key: $("#apikey").value});
+    $("#apikey").value = "";
+    $("#keyhint").textContent = r.key_hint ? `Chiave attiva: ${r.key_hint}` + (r.key_stored ? " — salvata nel Portachiavi" : "") : "Chiave rimossa";
+    $("#status").textContent = r.claude ? "Claude disponibile" : "";
+  } catch (e) { $("#err").textContent = "Errore: " + e.message; }
+};
 
+/* ------------------------------------------------------------ template */
+let tTimer;
+async function checkTemplate() {
+  const p = $("#template").value.trim(), el = $("#tstatus");
+  if (!p) { el.className = "tstatus"; el.textContent = "Senza template genero solo arrangiamento, MIDI e anteprima."; return; }
+  el.className = "tstatus"; el.textContent = "Controllo il template…";
+  try {
+    const d = await api("/api/template?path=" + encodeURIComponent(p));
+    if (!d.ok) { el.className = "tstatus bad"; el.textContent = d.error; return; }
+    el.className = "tstatus ok";
+    el.textContent = `Template valido: ${d.presets} preset, ${d.samples} sample` +
+      (d.trig_format_known ? "" : " — consiglio: salvalo con almeno un trig sulla traccia 1");
+  } catch (e) { el.className = "tstatus bad"; el.textContent = e.message; }
+}
+$("#template").addEventListener("input", () => { clearTimeout(tTimer); tTimer = setTimeout(checkTemplate, 500); });
+$("#pick").onclick = async () => {
+  const p = await window.pywebview.api.pick_folder($("#template").value);
+  if (p) { $("#template").value = p; checkTemplate(); }
+};
+window.addEventListener("pywebviewready", () => { $("#pick").hidden = false; });
+if (APP && window.pywebview) $("#pick").hidden = false;
+
+/* ------------------------------------------------------------ generate */
 async function run(body) {
   $("#err").textContent = "";
   $("#go").disabled = $("#rev").disabled = true;
   const t0 = Date.now();
   const tick = setInterval(() => $("#status").textContent = `Compongo… ${Math.round((Date.now() - t0) / 1000)} s`, 500);
   try {
-    try { localStorage.setItem("tvgen.template", $("#template").value); } catch (e) {}
-    const r = await fetch("/api/generate", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error || "errore");
-    lastSong = d.song;
+    const d = await api("/api/generate", body);
     show(d);
     $("#status").textContent = `Fatto in ${Math.round((Date.now() - t0) / 1000)} s (${d.engine})`;
+    loadHistory();
   } catch (e) {
     $("#err").textContent = "Errore: " + e.message;
     $("#status").textContent = "";
@@ -120,24 +222,185 @@ async function run(body) {
     $("#go").disabled = $("#rev").disabled = false;
   }
 }
+$("#go").onclick = () => run({prompt: $("#prompt").value, template: $("#template").value, engine: $("#engine").value});
+$("#rev").onclick = () => { if (state.last && $("#revise").value.trim()) run({song: state.last.song, revise: $("#revise").value, template: $("#template").value}); };
 
 function show(d) {
+  player.stop();
+  state.last = d;
   $("#result").style.display = "block";
   $("#r-title").textContent = d.title;
-  const m = Math.floor(d.duration / 60), s = String(d.duration % 60).padStart(2, "0");
-  $("#r-meta").textContent = `${d.bpm} BPM · ${d.key} ${d.scale.replace("_", " ")} · ${d.patterns} pattern · ${m}:${s}`;
+  $("#r-meta").textContent = `${d.bpm} BPM · ${d.key} ${d.scale.replace("_", " ")} · ${d.patterns} pattern · ${fmt(d.duration)}` + (d.project ? "" : " · senza progetto (nessun template)");
   const links = $("#r-links"); links.innerHTML = "";
-  const add = (href, text, cls) => { const a = document.createElement("a"); a.href = href; a.textContent = text; if (cls) a.className = cls; links.appendChild(a); };
-  add(d.zip, d.project ? "Scarica progetto (.zip)" : "Scarica MIDI e arrangiamento (.zip)", "main");
-  add(d.preview, "Anteprima MIDI");
-  add(d.sheet, "Apri arrangiamento");
+  const btn = (text, fn, cls) => { const b = document.createElement("button"); b.textContent = text; b.className = cls || "ghost"; b.onclick = fn; links.appendChild(b); return b; };
+  const link = (href, text, cls) => { const a = document.createElement("a"); a.href = href; a.textContent = text; if (cls) a.className = cls; links.appendChild(a); };
+  if (APP) {
+    const tmpl = $("#template").value.trim();
+    if (d.project && tmpl) btn("Copia sulla scheda SD", async e => {
+      e.target.disabled = true;
+      try { const r = await api("/api/copy-to-card", {bundle: d.bundle, template: tmpl}); e.target.textContent = "Copiato ✓"; $("#status").textContent = "Copiato in " + r.dest; }
+      catch (err) { $("#err").textContent = "Errore: " + err.message; e.target.disabled = false; }
+    }, "main");
+    btn("Mostra nel Finder", () => api("/api/reveal", {bundle: d.bundle}), d.project && tmpl ? "ghost" : "main");
+    btn("Apri arrangiamento", () => api("/api/open", {path: d.bundle + "/arrangiamento.html"}));
+    btn("Apri MIDI", () => api("/api/open", {path: d.bundle + "/song.mid"}));
+  } else {
+    link(d.zip, d.project ? "Scarica progetto (.zip)" : "Scarica MIDI e arrangiamento (.zip)", "main");
+    link(d.preview, "MIDI (General MIDI)");
+    link(d.sheet, "Apri arrangiamento");
+  }
   const w = $("#r-warn"); w.innerHTML = "";
   (d.warnings || []).forEach(x => { const li = document.createElement("li"); li.textContent = x; w.appendChild(li); });
+  player.load(d.player);
   $("#sheet").src = d.sheet;
 }
 
-$("#go").onclick = () => run({prompt: $("#prompt").value, template: $("#template").value, engine: $("#engine").value});
-$("#rev").onclick = () => { if (lastSong && $("#revise").value.trim()) run({song: lastSong, revise: $("#revise").value, template: $("#template").value}); };
+/* ------------------------------------------------------------ history */
+async function loadHistory() {
+  try {
+    const {items} = await api("/api/history");
+    $("#history").hidden = !items.length;
+    const ul = $("#hlist"); ul.innerHTML = "";
+    items.forEach(it => {
+      const li = document.createElement("li");
+      const a = document.createElement("span"); a.textContent = it.title + (it.project ? "" : " (solo MIDI)");
+      const b = document.createElement("span"); b.textContent = `${it.genre || ""} ${it.bpm ? it.bpm + " BPM" : ""} · ${new Date(it.mtime * 1000).toLocaleString("it-IT", {dateStyle: "short", timeStyle: "short"})}`;
+      li.append(a, b);
+      li.onclick = async () => { try { show(await api("/api/load?bundle=" + encodeURIComponent(it.bundle))); window.scrollTo({top: $("#result").offsetTop - 20, behavior: "smooth"}); } catch (e) { $("#err").textContent = e.message; } };
+      ul.appendChild(li);
+    });
+  } catch (e) { /* history is optional */ }
+}
+
+/* ------------------------------------------------------------ audio preview (WebAudio synth) */
+const player = (() => {
+  let ctx, master, noise, bus, data, idx = 0, t0 = 0, offset = 0, timer = null, raf = null, playing = false;
+
+  function init() {
+    if (ctx) return;
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -14; comp.ratio.value = 4;
+    master = ctx.createGain(); master.gain.value = 0.7;
+    master.connect(comp); comp.connect(ctx.destination);
+    noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
+    const ch = noise.getChannelData(0);
+    for (let i = 0; i < ch.length; i++) ch[i] = Math.random() * 2 - 1;
+  }
+  const mtof = n => 440 * Math.pow(2, (n - 69) / 12);
+  function env(g, t, peak, a, d, sus, rel, end) {
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(Math.max(peak, 0.0002), t + a);
+    g.gain.exponentialRampToValueAtTime(Math.max(peak * sus, 0.0001), t + a + d);
+    const stop = Math.max(end, t + a + d);
+    g.gain.setValueAtTime(Math.max(peak * sus, 0.0001), stop);
+    g.gain.exponentialRampToValueAtTime(0.0001, stop + rel);
+    return stop + rel + 0.05;
+  }
+  function osc(type, f, t, until, out, detune) {
+    const o = ctx.createOscillator(); o.type = type; o.frequency.setValueAtTime(f, t);
+    if (detune) o.detune.value = detune;
+    o.connect(out); o.start(t); o.stop(until); return o;
+  }
+  function noiseSrc(t, until, out) {
+    const s = ctx.createBufferSource(); s.buffer = noise; s.loop = true; s.connect(out); s.start(t); s.stop(until); return s;
+  }
+  function filt(type, f, q) { const x = ctx.createBiquadFilter(); x.type = type; x.frequency.value = f; if (q) x.Q.value = q; return x; }
+
+  const VOICES = {
+    kick(t, n, v) { const g = ctx.createGain(); g.connect(bus); const end = env(g, t, v, .002, .32, .001, .05, t);
+      const o = osc("sine", 150, t, end, g); o.frequency.exponentialRampToValueAtTime(44, t + .12); },
+    snare(t, n, v) { const g = ctx.createGain(), f = filt("bandpass", 1900, .7); f.connect(g); g.connect(bus);
+      const end = env(g, t, v * .55, .001, .17, .001, .05, t); noiseSrc(t, end, f);
+      const g2 = ctx.createGain(); g2.connect(bus); osc("triangle", 185, t, env(g2, t, v * .35, .001, .09, .001, .03, t), g2); },
+    hats(t, n, v, d) { const g = ctx.createGain(), f = filt("highpass", 7200); f.connect(g); g.connect(bus);
+      noiseSrc(t, env(g, t, v * .22, .001, Math.min(.04 + d * .25, .35), .001, .03, t), f); },
+    perc(t, n, v) { const g = ctx.createGain(), f = filt("bandpass", 900, 2); f.connect(g); g.connect(bus);
+      const o = osc("triangle", 540, t, env(g, t, v * .5, .001, .11, .001, .03, t), f); o.frequency.exponentialRampToValueAtTime(320, t + .1); },
+    bass(t, n, v, d) { const g = ctx.createGain(), f = filt("lowpass", 380 + v * 900, 4); f.connect(g); g.connect(bus);
+      f.frequency.setValueAtTime(380 + v * 1400, t); f.frequency.exponentialRampToValueAtTime(260, t + .25);
+      osc("sawtooth", mtof(n), t, env(g, t, v * .42, .004, .2, .6, .06, t + d), f); },
+    chords(t, n, v, d) { const g = ctx.createGain(), f = filt("lowpass", 2400); f.connect(g); g.connect(bus);
+      const end = env(g, t, v * .13, .008, .35, .45, .25, t + d);
+      osc("triangle", mtof(n), t, end, f, -6); osc("sawtooth", mtof(n), t, end, f, 6); },
+    lead(t, n, v, d) { const g = ctx.createGain(), f = filt("lowpass", 2600, 2); f.connect(g); g.connect(bus);
+      osc("square", mtof(n), t, env(g, t, v * .13, .005, .15, .6, .12, t + d), f); },
+    pad(t, n, v, d) { const g = ctx.createGain(), f = filt("lowpass", 1300); f.connect(g); g.connect(bus);
+      const end = env(g, t, v * .07, .45, .5, .8, .9, t + d);
+      osc("sawtooth", mtof(n), t, end, f, -11); osc("sawtooth", mtof(n), t, end, f, 11); },
+  };
+  const ALIAS = {clap: "snare", rim: "perc", tom: "perc", hat: "hats", openhat: "hats", keys: "chords", piano: "chords",
+                 melody: "lead", arp: "lead", strings: "pad", fx: "pad"};
+  function voiceFor(track) {
+    const info = (data.tracks || {})[track] || {};
+    const r = ALIAS[info.role] || info.role;
+    if (VOICES[r]) return VOICES[r];
+    return info.kind === "drum" ? VOICES.perc : VOICES.lead;
+  }
+
+  function schedule() {
+    const now = ctx.currentTime - t0 + offset;
+    const horizon = now + 0.18;
+    while (idx < data.notes.length && data.notes[idx][0] < horizon) {
+      const [time, track, note, vel, dur] = data.notes[idx++];
+      if (time >= now - 0.02) voiceFor(track)(t0 + time - offset, note, vel / 127, dur);
+    }
+    if (now >= data.duration) stop();
+  }
+  function draw() {
+    if (!data) return;
+    const pos = playing ? Math.min(ctx.currentTime - t0 + offset, data.duration) : offset;
+    $("#head").style.left = (100 * pos / Math.max(data.duration, 1)) + "%";
+    $("#time").textContent = `${fmt(pos)} / ${fmt(data.duration)}`;
+    const sec = data.sections.find(s => pos >= s.start && pos < s.end);
+    if (playing && sec) $("#now").textContent = `${sec.slot} · ${sec.label}` + (sec.mutes.length ? ` (mute: ${sec.mutes.map(m => "T" + m).join(", ")})` : "");
+    if (playing) raf = requestAnimationFrame(draw);
+  }
+  function start(at) {
+    init(); ctx.resume();
+    bus = ctx.createGain(); bus.connect(master);
+    offset = at; t0 = ctx.currentTime + 0.05;
+    idx = data.notes.findIndex(n => n[0] >= at); if (idx < 0) idx = data.notes.length;
+    playing = true; timer = setInterval(schedule, 25); schedule(); draw();
+    $("#play").innerHTML = ICON_STOP;
+  }
+  function stop() {
+    if (!playing) return;
+    offset = Math.min(ctx.currentTime - t0 + offset, data.duration);
+    if (offset >= data.duration - 0.05) offset = 0;
+    playing = false; clearInterval(timer); cancelAnimationFrame(raf);
+    const b = bus; b.gain.setTargetAtTime(0, ctx.currentTime, 0.02); setTimeout(() => b.disconnect(), 300);
+    $("#play").innerHTML = ICON_PLAY; draw();
+  }
+  function load(d) {
+    if (playing) stop();
+    data = d; offset = 0;
+    const bar = $("#bar"); bar.querySelectorAll(".seg").forEach(x => x.remove());
+    const slots = [...new Set(d.sections.map(s => s.slot))];
+    d.sections.forEach(s => {
+      const el = document.createElement("div"); el.className = "seg";
+      el.style.left = (100 * s.start / d.duration) + "%"; el.style.width = (100 * (s.end - s.start) / d.duration) + "%";
+      el.style.background = COLORS[slots.indexOf(s.slot) % COLORS.length];
+      el.textContent = s.slot; el.title = s.label; bar.insertBefore(el, $("#head"));
+    });
+    $("#now").textContent = "Anteprima con suoni sintetici: sulla macchina suonerà con i suoni del template.";
+    draw();
+  }
+  $("#play").innerHTML = ICON_PLAY;
+  $("#play").onclick = () => { if (!data) return; playing ? stop() : start(offset); };
+  $("#bar").onclick = e => {
+    if (!data) return;
+    const r = $("#bar").getBoundingClientRect();
+    const at = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * data.duration;
+    if (playing) { stop(); start(at); } else { offset = at; draw(); }
+  };
+  document.addEventListener("keydown", e => {
+    if (e.code === "Space" && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) && data) { e.preventDefault(); $("#play").click(); }
+  });
+  return {load, stop: () => { if (playing) stop(); }};
+})();
+
+loadStatus().catch(e => $("#err").textContent = "Errore: " + e.message);
 </script>
 </body>
 </html>

@@ -293,3 +293,53 @@ def test_llm_refusal(monkeypatch):
     _fake_anthropic(monkeypatch, _Msg("", stop="refusal"), {})
     with pytest.raises(llm.ComposerError):
         llm.compose("x", LAYOUT)
+
+
+# ------------------------------------------------------------------ desktop app backend
+def test_server_requires_token(template, tmp_path, monkeypatch):
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "cfg"))
+    import threading
+    import urllib.error
+    import urllib.request
+    from tvgen.web.server import make_server
+    h = make_server("127.0.0.1", 0, str(tmp_path / "o"), template, app_mode=True)
+    threading.Thread(target=h.serve_forever, daemon=True).start()
+    base = f"http://127.0.0.1:{h.app.port}"
+    try:
+        page = urllib.request.urlopen(base + "/").read().decode()
+        assert h.app.token in page and "const APP = true" in page
+        with pytest.raises(urllib.error.HTTPError) as e:
+            urllib.request.urlopen(base + "/api/status")
+        assert e.value.code == 403
+        hdr = {"X-TVGen-Token": h.app.token, "Content-Type": "application/json"}
+        st = json.loads(urllib.request.urlopen(urllib.request.Request(base + "/api/status", headers=hdr)).read())
+        assert st["app"] is True
+        body = json.dumps({"prompt": "techno 130 bpm", "engine": "offline", "template": template}).encode()
+        r = json.loads(urllib.request.urlopen(urllib.request.Request(base + "/api/generate", body, hdr)).read())
+        assert r["project"] and r["player"]["notes"] and r["player"]["sections"]
+        assert abs(r["player"]["duration"] - r["duration"]) < 1
+        hist = json.loads(urllib.request.urlopen(urllib.request.Request(base + "/api/history", headers=hdr)).read())
+        assert hist["items"][0]["bundle"] == r["bundle"]
+        bad = urllib.request.Request(base + "/api/load?bundle=../../etc", headers=hdr)
+        with pytest.raises(urllib.error.HTTPError):
+            urllib.request.urlopen(bad)
+    finally:
+        h.shutdown()
+
+
+def test_copy_next_to_template(tmp_path):
+    from tvgen import appsupport
+    card = tmp_path / "card"
+    (card / "TEMPLATE").mkdir(parents=True)
+    proj = tmp_path / "out" / "SONG" / "SONG"
+    proj.mkdir(parents=True)
+    (proj / "CURRENT").write_text("x")
+    d1 = appsupport.copy_next_to_template(str(proj), str(card / "TEMPLATE"))
+    d2 = appsupport.copy_next_to_template(str(proj), str(card / "TEMPLATE"))
+    assert os.path.basename(d1) == "SONG" and os.path.basename(d2) == "SONG-2"
+    assert (card / "SONG" / "CURRENT").read_text() == "x"
+
+
+def test_macapp_selftest():
+    from tvgen import macapp
+    assert macapp.selftest() == 0

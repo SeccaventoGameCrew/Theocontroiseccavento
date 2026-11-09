@@ -1,0 +1,68 @@
+name: Tonverk Generator - app macOS
+
+on:
+  push:
+    branches: ["main", "claude/**"]
+    paths:
+      - "tonverk-generator/**"
+      - ".github/workflows/tonverk-macos-app.yml"
+    tags: ["tvgen-v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: macOS ${{ matrix.arch }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            arch: arm64
+          - runner: macos-15-intel
+            arch: x86_64
+    runs-on: ${{ matrix.runner }}
+    defaults:
+      run:
+        working-directory: tonverk-generator
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Test
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[test]"
+          python -m pytest -q
+
+      - name: Build app and DMG
+        env:
+          TVGEN_ARCH: ${{ matrix.arch }}
+        run: ./macapp/build.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TonverkGenerator-macOS-${{ matrix.arch }}
+          path: tonverk-generator/dist/*.dmg
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/tvgen-v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dmg
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dmg/*.dmg
+          name: Tonverk Generator ${{ github.ref_name }}
