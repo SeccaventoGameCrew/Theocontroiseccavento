@@ -47,6 +47,10 @@ repository e scarica l'artifact `TonverkGenerator-macOS-arm64` (Mac con chip App
 `TonverkGenerator-macOS-x86_64` (Mac Intel). Con un tag `tvgen-v…` i `.dmg` vengono anche
 pubblicati in una Release.
 
+La versione x86_64 funziona anche sui Mac con chip Apple tramite Rosetta 2: al primo avvio
+macOS propone di installare Rosetta, basta accettare. Per una versione nativa arm64 compila
+l'app sul tuo Mac con `macapp/build.sh` (vedi sotto).
+
 Apri il `.dmg` e trascina l'app in *Applicazioni*. L'app non è firmata con un certificato
 Apple Developer, quindi al primo avvio macOS la blocca: fai **clic destro → Apri**, oppure vai in
 *Impostazioni di Sistema → Privacy e sicurezza* e premi **Apri comunque**. In alternativa, da
