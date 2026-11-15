@@ -47,7 +47,7 @@
   .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
   .tv-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 20px; }
   @media (max-width: 760px) { .tv-grid { grid-template-columns: 1fr; } }
-  .stage { padding: 22px; border-radius: 12px; background: var(--chip); }
+  .stage { padding: 22px; border-radius: 12px; background: var(--chip); align-self: start; }
   .screen { position: relative; aspect-ratio: 16 / 9; background: var(--screen); border-radius: 6px;
             transition: box-shadow .25s; }
   .screen .led { position: absolute; width: 9px; height: 9px; border-radius: 50%; transform: translate(-50%, -50%); }
