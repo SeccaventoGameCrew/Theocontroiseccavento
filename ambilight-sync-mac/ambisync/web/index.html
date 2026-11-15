@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ambilight Sync</title>
+<style>
+  :root {
+    --bg: #f4f3f1; --card: #ffffff; --ink: #1d1d1f; --muted: #6e6e73; --line: #e3e1dd;
+    --accent: #5b4cf0; --accent-ink: #ffffff; --ok: #1f8f4e; --warn: #b26a00; --bad: #c62f3a;
+    --chip: #efeee9; --screen: #121214; --field: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141416; --card: #1d1d20; --ink: #f2f2f4; --muted: #9a9aa2; --line: #2e2e33;
+      --accent: #8b80ff; --accent-ink: #0f0f12; --ok: #4cc77f; --warn: #f0a33a; --bad: #ff6b74;
+      --chip: #2a2a2f; --screen: #060607; --field: #26262a;
+    }
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 20px 16px 48px; }
+  header { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+  header h1 { font-size: 22px; margin: 0; letter-spacing: -0.01em; }
+  .grow { flex: 1; }
+  .pill { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px; border-radius: 999px;
+          background: var(--chip); color: var(--muted); font-size: 13px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .pill.on .dot { background: var(--ok); box-shadow: 0 0 0 4px color-mix(in srgb, var(--ok) 25%, transparent); }
+  .pill.warn .dot { background: var(--warn); }
+  .pill.bad .dot { background: var(--bad); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; margin-bottom: 16px; }
+  .card h2 { font-size: 16px; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+  button { font: inherit; border: 1px solid var(--line); background: var(--field); color: var(--ink);
+           padding: 7px 13px; border-radius: 9px; cursor: pointer; }
+  button:hover { border-color: var(--muted); }
+  button:disabled { opacity: .5; cursor: default; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+  button.big { padding: 10px 20px; font-size: 15px; }
+  button.link { border: none; background: none; color: var(--accent); padding: 4px 6px; }
+  input, select, textarea { font: inherit; color: var(--ink); background: var(--field); border: 1px solid var(--line);
+                            border-radius: 8px; padding: 6px 9px; }
+  textarea { width: 100%; min-height: 90px; font: 12px ui-monospace, Menlo, monospace; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .tv-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 20px; }
+  @media (max-width: 760px) { .tv-grid { grid-template-columns: 1fr; } }
+  .stage { padding: 22px; border-radius: 12px; background: var(--chip); }
+  .screen { position: relative; aspect-ratio: 16 / 9; background: var(--screen); border-radius: 6px;
+            transition: box-shadow .25s; }
+  .screen .led { position: absolute; width: 9px; height: 9px; border-radius: 50%; transform: translate(-50%, -50%); }
+  .screen .label { position: absolute; inset: 0; display: grid; place-items: center; color: #8d8d95; font-size: 13px; }
+  .checks { list-style: none; padding: 0; margin: 12px 0 0; }
+  .checks li { display: flex; gap: 8px; padding: 4px 0; font-size: 14px; }
+  .checks .k { width: 18px; flex: none; text-align: center; font-weight: 700; }
+  .checks .ok { color: var(--ok); } .checks .no { color: var(--bad); }
+  .checks .d { color: var(--muted); }
+  .lights { display: flex; flex-direction: column; gap: 10px; }
+  .light { display: grid; grid-template-columns: 34px minmax(0, 1fr) 150px 180px auto; gap: 8px 12px;
+           grid-template-areas: "sw info label zone actions"; align-items: center;
+           padding: 10px 12px; border: 1px solid var(--line); border-radius: 11px; }
+  .light .swatch { grid-area: sw; } .light .info { grid-area: info; } .light .f-label { grid-area: label; }
+  .light .f-zone { grid-area: zone; } .light .actions { grid-area: actions; }
+  .light.off { opacity: .62; }
+  .opts { display: flex; gap: 10px; margin-top: 4px; }
+  @media (max-width: 760px) {
+    .light { grid-template-columns: 34px minmax(0, 0.85fr) minmax(0, 1.15fr);
+             grid-template-areas: "sw info info" "label label zone" "actions actions actions"; }
+    .light .actions { justify-content: flex-start; }
+  }
+  .swatch { width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--line); background: #000; transition: background .2s; }
+  .name { font-weight: 600; overflow-wrap: anywhere; }
+  .meta { color: var(--muted); font-size: 12.5px; overflow-wrap: anywhere; }
+  .err { color: var(--bad); font-size: 12.5px; }
+  .field label { display: block; color: var(--muted); font-size: 12px; margin-bottom: 2px; }
+  .field select { width: 100%; }
+  .actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+  .switch { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); white-space: nowrap; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0 12px; }
+  .chip { padding: 3px 10px; border-radius: 999px; background: var(--chip); font-size: 13px; }
+  .chip.miss { color: var(--warn); }
+  .notice { padding: 10px 12px; border-radius: 10px; background: color-mix(in srgb, var(--warn) 14%, var(--card));
+            border: 1px solid color-mix(in srgb, var(--warn) 35%, var(--line)); font-size: 14px; margin: 8px 0; }
+  .notice.bad { background: color-mix(in srgb, var(--bad) 12%, var(--card)); border-color: color-mix(in srgb, var(--bad) 35%, var(--line)); }
+  .sliders { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px 22px; }
+  .sliders label { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); }
+  .sliders input[type=range] { width: 100%; accent-color: var(--accent); padding: 0; border: none; background: none; }
+  details { border-top: 1px solid var(--line); padding-top: 12px; margin-top: 12px; }
+  details:first-of-type { border-top: none; margin-top: 0; padding-top: 0; }
+  summary { cursor: pointer; font-weight: 600; }
+  .help { color: var(--muted); font-size: 13.5px; }
+  .help li { margin: 3px 0; }
+  .log { font: 12px/1.5 ui-monospace, Menlo, monospace; color: var(--muted); max-height: 220px; overflow: auto;
+         white-space: pre-wrap; margin: 8px 0 0; }
+  .muted { color: var(--muted); }
+  .found { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 0;
+           border-bottom: 1px solid var(--line); }
+  .spin { display: inline-block; width: 13px; height: 13px; border: 2px solid var(--line); border-top-color: var(--accent);
+          border-radius: 50%; animation: s .8s linear infinite; vertical-align: -2px; }
+  @keyframes s { to { transform: rotate(360deg); } }
+  footer { display: flex; justify-content: space-between; color: var(--muted); font-size: 13px; padding: 4px 2px; }
+  .toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); background: var(--ink); color: var(--bg);
+           padding: 9px 16px; border-radius: 10px; font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: 90vw; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Ambilight Sync</h1>
+    <span id="status" class="pill"><span class="dot"></span><span id="status-text">Fermo</span></span>
+    <span class="grow"></span>
+    <button id="sync-btn" class="primary big">Avvia sincronizzazione</button>
+  </header>
+
+  <section class="card">
+    <h2>TV Philips</h2>
+    <p class="sub">La TV viene cercata in rete a ogni avvio, anche se cambia indirizzo.</p>
+    <div class="tv-grid">
+      <div>
+        <div id="tv-info">Nessuna TV selezionata.</div>
+        <div class="row" style="margin-top:12px">
+          <button id="scan-btn">Cerca in rete</button>
+          <button id="pair-btn" hidden>Abbina TV</button>
+          <button id="verify-btn" hidden>Verifica Ambilight</button>
+        </div>
+        <div id="pin-row" class="row" style="margin-top:12px" hidden>
+          <input id="pin" inputmode="numeric" autocomplete="one-time-code" placeholder="PIN sulla TV" size="10">
+          <button id="pin-btn" class="primary">Conferma PIN</button>
+        </div>
+        <div id="tv-found" style="margin-top:10px"></div>
+        <details style="margin-top:12px">
+          <summary>Inserisci l'indirizzo IP a mano</summary>
+          <div class="row" style="margin-top:8px">
+            <input id="tv-ip" placeholder="192.168.1.50" size="16"><button id="tv-ip-btn">Usa questo indirizzo</button>
+          </div>
+        </details>
+        <ul id="checks" class="checks"></ul>
+      </div>
+      <div class="stage"><div id="screen" class="screen"><div class="label" id="screen-label">Anteprima Ambilight</div></div></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Strisce LED</h2>
+    <p class="sub">Dai a ogni striscia il nome che usi con Alexa e scegli quale parte dello schermo deve seguire.</p>
+    <div id="warnings"></div>
+    <div class="chips" id="chips"></div>
+    <div id="lights" class="lights"></div>
+    <div id="hints"></div>
+    <div class="row" style="margin-top:12px"><button id="scan-btn2">Cerca strisce</button><span id="scan-msg" class="muted"></span></div>
+  </section>
+
+  <section class="card">
+    <h2>Regolazioni</h2>
+    <div class="sliders">
+      <div><label>Luminosità <span id="v-brightness"></span></label><input type="range" id="brightness" min="0" max="100" step="1"></div>
+      <div><label>Morbidezza transizioni <span id="v-smoothing"></span></label><input type="range" id="smoothing" min="0" max="0.9" step="0.05"></div>
+      <div><label>Saturazione <span id="v-saturation"></span></label><input type="range" id="saturation" min="0.5" max="2" step="0.05"></div>
+      <div><label>Aggiornamenti al secondo <span id="v-fps"></span></label><input type="range" id="fps" min="2" max="20" step="1"></div>
+    </div>
+    <div class="row" style="margin-top:14px; gap:18px">
+      <label class="switch"><input type="checkbox" id="off_when_dark"> Spegni le strisce nelle scene nere</label>
+      <label class="switch"><input type="checkbox" id="off_when_tv_off"> Spegni le strisce quando la TV si spegne</label>
+      <label class="switch"><input type="checkbox" id="autostart"> Avvia la sincronizzazione all'apertura</label>
+      <label class="switch">Colori: <select id="source"><option value="processed">come i LED Ambilight</option><option value="measured">direttamente dallo schermo</option></select></label>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Altre marche e aiuto</h2>
+    <details>
+      <summary>Philips Hue (Bridge)</summary>
+      <p class="help">Premi il pulsante rotondo sul Bridge Hue, poi entro 30 secondi clicca «Collega».</p>
+      <div id="hue-list"></div>
+    </details>
+    <details>
+      <summary>Tuya / Smart Life (strisce senza marca)</summary>
+      <div class="help">
+        <p id="tuya-status"></p>
+        <ol>
+          <li>Nel Terminale esegui <code>~/Library/Application\ Support/AmbilightSync/venv/bin/python3 -m tinytuya wizard</code> e segui le istruzioni (serve un account gratuito su iot.tuya.com collegato all'app Smart Life).</li>
+          <li>Apri il file <code>devices.json</code> creato e incolla qui il contenuto.</li>
+        </ol>
+      </div>
+      <textarea id="tuya-text" placeholder='[{"name": "mensola 1", "id": "...", "key": "..."}]'></textarea>
+      <div class="row" style="margin-top:8px"><button id="tuya-btn">Importa chiavi Tuya</button></div>
+    </details>
+    <details>
+      <summary>Aggiungi una striscia con indirizzo IP</summary>
+      <div class="row" style="margin-top:8px">
+        <select id="add-driver">
+          <option value="wled">WLED</option><option value="govee">Govee</option><option value="wiz">WiZ</option>
+          <option value="yeelight">Yeelight</option><option value="magichome">Magic Home</option>
+        </select>
+        <input id="add-ip" placeholder="192.168.1.60" size="16"><button id="add-btn">Aggiungi</button>
+      </div>
+    </details>
+    <details>
+      <summary>Una striscia non compare?</summary>
+      <ul class="help">
+        <li><b>Govee</b>: app Govee Home › dispositivo › impostazioni › attiva «LAN Control».</li>
+        <li><b>Yeelight</b>: app Yeelight › dispositivo › impostazioni › attiva «Controllo LAN».</li>
+        <li><b>WiZ</b>: app WiZ › Impostazioni › Sicurezza › attiva «Consenti comunicazione locale».</li>
+        <li><b>Tuya / Smart Life</b>: servono le chiavi locali (sezione sopra).</li>
+        <li><b>Zigbee collegate a un Echo</b> (Echo 4ª gen., Echo Show 10...): non sono raggiungibili dalla rete Wi-Fi. Spostale su un Bridge Hue.</li>
+        <li><b>Matter, Tapo, LIFX, Nanoleaf</b>: non ancora supportate.</li>
+        <li>Il Mac e le strisce devono essere sulla stessa rete Wi-Fi (non la rete ospiti).</li>
+      </ul>
+    </details>
+    <details>
+      <summary>Registro</summary>
+      <div id="log" class="log"></div>
+    </details>
+  </section>
+
+  <footer><span id="version"></span><button class="link" id="quit-btn">Chiudi l'app</button></footer>
+</main>
+<div id="toast" class="toast"></div>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+let S = null;            // last state
+let lightsKey = "";      // signature of the rendered light list
+
+function h(tag, attrs, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v === null || v === undefined || v === false) continue;
+    if (k === "class") el.className = v;
+    else if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+    else if (k === "checked" || k === "disabled" || k === "selected") el[k] = !!v;
+    else el.setAttribute(k, v === true ? "" : v);
+  }
+  for (const kid of kids.flat()) {
+    if (kid === null || kid === undefined || kid === false) continue;
+    el.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
+  }
+  return el;
+}
+
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toast.timer); toast.timer = setTimeout(() => t.classList.remove("show"), 3200);
+}
+
+async function api(path, body) {
+  const res = await fetch(path, {
+    method: "POST", headers: { "Content-Type": "application/json", "X-Ambisync": "1" },
+    body: JSON.stringify(body || {}),
+  });
+  const data = await res.json().catch(() => ({ ok: false, error: "risposta non valida" }));
+  if (!data.ok) { toast(data.error || "Errore"); throw new Error(data.error); }
+  setTimeout(refresh, 150);
+  return data.result;
+}
+
+function job(name) { return (S && S.jobs && S.jobs[name]) || {}; }
+
+// ---------------------------------------------------------------- render
+function renderStatus() {
+  const e = S.engine, pill = $("status");
+  const labels = { attivo: "Sincronizzazione attiva", avvio: "Avvio...", tv_assente: "TV non raggiungibile",
+                   abbinamento: "Abbinamento richiesto", errore: "Errore", fermo: "Fermo" };
+  pill.className = "pill " + ({ attivo: "on", tv_assente: "warn", abbinamento: "warn", errore: "bad" }[e.state] || "");
+  $("status-text").textContent = (labels[e.state] || e.state) + (e.state === "attivo" && e.fps ? ` · ${e.fps}/s` : "");
+  pill.title = e.message || "";
+  const btn = $("sync-btn");
+  btn.textContent = e.running ? "Ferma" : "Avvia sincronizzazione";
+  btn.className = e.running ? "big" : "primary big";
+}
+
+function renderTV() {
+  const tv = S.tv, info = $("tv-info");
+  info.replaceChildren();
+  if (tv) {
+    info.append(h("div", { class: "name" }, tv.name || "TV Philips"),
+      h("div", { class: "meta" }, `${tv.host} · JointSPACE v${tv.api} · ${tv.tls ? "https" : "http"} · ` +
+        (tv.pairing_required ? (tv.paired ? "abbinata" : "da abbinare") : "nessun abbinamento richiesto")));
+  } else {
+    info.append(h("span", { class: "muted" }, "Nessuna TV selezionata: premi «Cerca in rete»."));
+  }
+  if (S.engine.message && S.engine.state !== "fermo") info.append(h("div", { class: "meta", style: "margin-top:6px" }, S.engine.message));
+  $("pair-btn").hidden = !(tv && tv.pairing_required);
+  $("pair-btn").textContent = tv && tv.paired ? "Abbina di nuovo" : "Abbina TV";
+  $("verify-btn").hidden = !tv;
+
+  const scanning = job("scan").running;
+  for (const id of ["scan-btn", "scan-btn2"]) {
+    $(id).disabled = scanning;
+    $(id).replaceChildren(scanning ? h("span", { class: "spin" }) : "", scanning ? " Ricerca..." : (id === "scan-btn" ? "Cerca in rete" : "Cerca strisce"));
+  }
+  $("scan-msg").textContent = job("scan").message || "";
+
+  // pairing
+  $("pin-row").hidden = !(S.pairing_pending && !job("pair").running);
+
+  // TVs found by the last scan
+  const found = $("tv-found"); found.replaceChildren();
+  const tvs = (S.scan && S.scan.tvs) || [];
+  for (const t of tvs) {
+    const current = tv && tv.host === t.host;
+    found.append(h("div", { class: "found" },
+      h("div", {}, h("div", { class: "name" }, t.name || "TV Philips"),
+        h("div", { class: "meta" }, `${t.host} · ${t.ambilight_features.join(", ") || "Ambilight"}`)),
+      current ? h("span", { class: "muted" }, "in uso") :
+        h("button", { onclick: () => api("/api/tv/select", { host: t.host }) }, "Usa questa")));
+  }
+  if (S.scan && !tvs.length && !scanning) found.append(h("div", { class: "notice" }, "Nessuna TV Philips trovata. Accendila e verifica che sia sulla stessa rete del Mac."));
+
+  // verification report
+  const vj = job("verify"), checks = $("checks");
+  checks.replaceChildren();
+  if (vj.running) checks.append(h("li", {}, h("span", { class: "spin" }), " Verifica in corso..."));
+  if (vj.error) checks.append(h("li", {}, h("span", { class: "k no" }, "✗"), vj.error));
+  if (vj.result && !vj.running) {
+    for (const c of vj.result.checks) {
+      checks.append(h("li", {}, h("span", { class: "k " + (c.ok ? "ok" : "no") }, c.ok ? "✓" : "✗"),
+        h("span", {}, c.label, c.detail ? h("span", { class: "d" }, " — " + c.detail) : "")));
+    }
+  }
+  for (const n of ["pair", "tv"]) if (job(n).error) checks.append(h("li", {}, h("span", { class: "k no" }, "✗"), job(n).error));
+
+  const frame = S.engine.frame || (vj.result && vj.result.sample);
+  renderScreen(frame);
+}
+
+function avgHex(list) {
+  if (!list || !list.length) return null;
+  let r = 0, g = 0, b = 0;
+  for (const x of list) { r += parseInt(x.slice(1, 3), 16); g += parseInt(x.slice(3, 5), 16); b += parseInt(x.slice(5, 7), 16); }
+  const n = list.length, f = (v) => Math.round(v / n);
+  return `rgb(${f(r)},${f(g)},${f(b)})`;
+}
+
+function renderScreen(frame) {
+  const scr = $("screen");
+  scr.querySelectorAll(".led").forEach((n) => n.remove());
+  $("screen-label").textContent = frame ? "" : "Anteprima Ambilight";
+  if (!frame) { scr.style.boxShadow = "none"; return; }
+  const place = (list, fn) => list.forEach((c, i) => {
+    const t = list.length === 1 ? 0.5 : i / (list.length - 1);
+    const [x, y] = fn(t);
+    scr.append(h("span", { class: "led", style: `left:${x}%;top:${y}%;background:${c}` }));
+  });
+  // Ambilight LEDs run clockwise: left side bottom->top, top left->right, right top->bottom, bottom right->left
+  place(frame.left || [], (t) => [-3, 96 - t * 92]);
+  place(frame.top || [], (t) => [4 + t * 92, -5]);
+  place(frame.right || [], (t) => [103, 4 + t * 92]);
+  place(frame.bottom || [], (t) => [96 - t * 92, 105]);
+  const sh = [];
+  const l = avgHex(frame.left), t = avgHex(frame.top), r = avgHex(frame.right), b = avgHex(frame.bottom);
+  if (l) sh.push(`-26px 0 40px -6px ${l}`);
+  if (t) sh.push(`0 -24px 40px -6px ${t}`);
+  if (r) sh.push(`26px 0 40px -6px ${r}`);
+  if (b) sh.push(`0 24px 40px -6px ${b}`);
+  scr.style.boxShadow = sh.join(",");
+}
+
+function renderLights() {
+  const box = $("lights");
+  const key = JSON.stringify(S.lights.map((l) => [l.id, l.label, l.zone, l.enabled, l.gradient, l.reverse, l.ip, l.name]))
+    + JSON.stringify(S.targets);
+  if (key !== lightsKey) {
+    lightsKey = key;
+    box.replaceChildren();
+    if (!S.lights.length) box.append(h("div", { class: "muted" }, "Nessuna striscia trovata finora: premi «Cerca strisce»."));
+    for (const l of S.lights) box.append(lightRow(l));
+  }
+  for (const l of S.lights) {   // live parts only
+    const row = box.querySelector(`[data-id="${CSS.escape(l.id)}"]`);
+    if (!row) continue;
+    const live = l.live;
+    row.querySelector(".swatch").style.background = live && live.color ? live.color : (l.enabled ? "#000" : "transparent");
+    const err = row.querySelector(".err");
+    err.textContent = live && live.error ? "Non risponde: " + live.error : "";
+    const busy = job("identify:" + l.id).running;
+    const ib = row.querySelector(".identify");
+    ib.disabled = busy; ib.textContent = busy ? "Lampeggia..." : "Fai lampeggiare";
+  }
+  // chips: which Alexa names still need a strip
+  const chips = $("chips"); chips.replaceChildren();
+  for (const t of S.targets) {
+    const miss = S.missing.includes(t);
+    chips.append(h("span", { class: "chip" + (miss ? " miss" : "") }, (miss ? "○ " : "● ") + t));
+  }
+  const warn = $("warnings"); warn.replaceChildren();
+  for (const w of (S.scan && S.scan.warnings) || []) warn.append(h("div", { class: "notice bad" }, w));
+  const hints = $("hints"); hints.replaceChildren();
+  for (const x of (S.scan && S.scan.hints) || []) {
+    hints.append(h("div", { class: "notice" }, `Possibile dispositivo ${x.brand} a ${x.ip}: ` +
+      (x.brand.startsWith("Tuya") ? "importa le chiavi Tuya (sezione «Altre marche»)." :
+       x.brand === "Yeelight" ? "verifica che «Controllo LAN» sia attivo nell'app." : "aggiungilo con l'indirizzo IP.")));
+  }
+}
+
+function lightRow(l) {
+  const labelSel = h("select", { onchange: (e) => api("/api/lights/update", { id: l.id, label: e.target.value }) },
+    h("option", { value: "" }, "— nessuno —"),
+    S.targets.map((t) => h("option", { value: t, selected: l.label === t }, t)));
+  const zoneSel = h("select", { onchange: (e) => api("/api/lights/update", { id: l.id, zone: e.target.value }) },
+    Object.entries(S.zones).map(([k, v]) => h("option", { value: k, selected: l.zone === k }, v)));
+  const title = l.label || l.name || "Striscia senza nome";
+  const meta = [l.brand, l.model, l.ip, l.name && l.label && l.name.toLowerCase() !== l.label ? `«${l.name}»` : null].filter(Boolean).join(" · ");
+  return h("div", { class: "light" + (l.enabled ? "" : " off"), "data-id": l.id },
+    h("div", { class: "swatch" }),
+    h("div", { class: "info" }, h("div", { class: "name" }, title), h("div", { class: "meta" }, meta), h("div", { class: "err" })),
+    h("div", { class: "field f-label" }, h("label", {}, "Nome (Alexa)"), labelSel),
+    h("div", { class: "field f-zone" }, h("label", {}, "Segue"), zoneSel,
+      l.supports_gradient ? h("div", { class: "opts" },
+        h("label", { class: "switch", title: "Ogni LED segue un punto diverso del lato scelto" },
+          h("input", { type: "checkbox", checked: l.gradient, onchange: (e) => api("/api/lights/update", { id: l.id, gradient: e.target.checked }) }), "sfumato"),
+        l.gradient ? h("label", { class: "switch" },
+          h("input", { type: "checkbox", checked: l.reverse, onchange: (e) => api("/api/lights/update", { id: l.id, reverse: e.target.checked }) }), "inverti") : null) : null),
+    h("div", { class: "actions" },
+      h("label", { class: "switch" },
+        h("input", { type: "checkbox", checked: l.enabled, onchange: (e) => api("/api/lights/update", { id: l.id, enabled: e.target.checked }) }), "attiva"),
+      h("button", { class: "identify", onclick: () => api("/api/lights/identify", { id: l.id }) }, "Fai lampeggiare"),
+      h("button", { class: "link", title: "Rimuovi", onclick: () => confirm("Rimuovere questa striscia?") && api("/api/lights/remove", { id: l.id }) }, "Rimuovi")));
+}
+
+const SETTINGS = ["brightness", "smoothing", "saturation", "fps"];
+const FORMAT = { brightness: (v) => v + "%", smoothing: (v) => Math.round(v * 100) + "%", saturation: (v) => "×" + Number(v).toFixed(2), fps: (v) => v };
+function renderSettings() {
+  for (const k of SETTINGS) {
+    const el = $(k);
+    if (document.activeElement !== el) el.value = S.settings[k];
+    $("v-" + k).textContent = FORMAT[k](el.value);
+  }
+  for (const k of ["off_when_dark", "off_when_tv_off", "autostart"]) $(k).checked = !!S.settings[k];
+  if (document.activeElement !== $("source")) $("source").value = S.settings.source;
+}
+
+function renderOther() {
+  const hl = $("hue-list"); hl.replaceChildren();
+  for (const b of S.hue_linked) hl.append(h("div", { class: "found" }, h("span", {}, `${b.name || "Bridge Hue"} · ${b.ip}`), h("span", { class: "muted" }, "collegato")));
+  for (const b of (S.scan && S.scan.hue_bridges) || []) {
+    hl.append(h("div", { class: "found" }, h("span", {}, `${b.name} · ${b.ip}`),
+      h("button", { onclick: () => api("/api/hue/link", { ip: b.ip }) }, job("hue").running ? "Collego..." : "Collega")));
+  }
+  if (!hl.childNodes.length) hl.append(h("div", { class: "muted" }, "Nessun Bridge Hue trovato nella rete."));
+  if (job("hue").error) hl.append(h("div", { class: "err" }, job("hue").error));
+  $("tuya-status").textContent = S.tuya_available
+    ? (S.tuya_count ? `Chiavi importate per ${S.tuya_count} dispositivi Tuya.` : "Nessuna chiave Tuya importata.")
+    : "Il supporto Tuya non è installato: riesegui l'installazione con la connessione a Internet attiva.";
+  $("log").textContent = S.log.join("\n");
+  $("version").textContent = "Ambilight Sync " + S.version;
+}
+
+async function refresh() {
+  try {
+    const res = await fetch("/api/state", { cache: "no-store" });
+    S = await res.json();
+  } catch (e) {
+    $("status").className = "pill bad"; $("status-text").textContent = "App chiusa";
+    return;
+  }
+  renderStatus(); renderTV(); renderLights(); renderSettings(); renderOther();
+}
+
+// ---------------------------------------------------------------- events
+$("sync-btn").onclick = () => api(S && S.engine.running ? "/api/sync/stop" : "/api/sync/start");
+$("scan-btn").onclick = $("scan-btn2").onclick = () => api("/api/scan");
+$("pair-btn").onclick = () => api("/api/tv/pair/start").then(() => toast("Guarda la TV: comparirà un PIN"));
+$("pin-btn").onclick = () => api("/api/tv/pair/finish", { pin: $("pin").value }).then(() => { $("pin").value = ""; setTimeout(() => api("/api/tv/verify"), 1500); });
+$("pin").addEventListener("keydown", (e) => { if (e.key === "Enter") $("pin-btn").click(); });
+$("verify-btn").onclick = () => api("/api/tv/verify");
+$("tv-ip-btn").onclick = () => api("/api/tv/select", { host: $("tv-ip").value });
+$("tuya-btn").onclick = () => api("/api/tuya/import", { text: $("tuya-text").value }).then((n) => { toast(`Importate ${n} luci Tuya: ora premi «Cerca strisce»`); $("tuya-text").value = ""; });
+$("add-btn").onclick = () => api("/api/lights/add", { driver: $("add-driver").value, ip: $("add-ip").value });
+$("quit-btn").onclick = () => confirm("Chiudere Ambilight Sync? La sincronizzazione si fermerà.") && api("/api/quit").then(() => toast("App chiusa"));
+for (const k of SETTINGS) {
+  $(k).addEventListener("input", (e) => { $("v-" + k).textContent = FORMAT[k](e.target.value); });
+  $(k).addEventListener("change", (e) => api("/api/settings", { [k]: Number(e.target.value) }));
+}
+for (const k of ["off_when_dark", "off_when_tv_off", "autostart"]) $(k).addEventListener("change", (e) => api("/api/settings", { [k]: e.target.checked }));
+$("source").addEventListener("change", (e) => api("/api/settings", { source: e.target.value }));
+
+refresh();
+setInterval(refresh, 1000);
+</script>
+</body>
+</html>
