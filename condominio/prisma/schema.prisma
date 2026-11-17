@@ -1,0 +1,414 @@
+// Schema dati per la gestione condominiale (Italia).
+// Riferimenti normativi principali: Codice Civile artt. 1117-1139,
+// disposizioni di attuazione artt. 61-72, L. 220/2012 (riforma del condominio).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// =====================================================================
+// UTENTI / ACCESSO
+// =====================================================================
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  nome         String
+  ruolo        String   @default("amministratore") // amministratore | collaboratore | consigliere
+  createdAt    DateTime @default(now())
+}
+
+// =====================================================================
+// CONDOMINIO
+// =====================================================================
+model Condominio {
+  id              String   @id @default(cuid())
+  denominazione   String
+  codiceFiscale   String? // il condominio ha un proprio C.F. (art. 1129 c.c. / obblighi fiscali sostituto d'imposta)
+  indirizzo       String
+  cap             String?
+  citta           String?
+  provincia       String?
+  dataCostituzione DateTime?
+  tipoRegolamento String   @default("assembleare") // assembleare | contrattuale | nessuno
+  note            String?
+  createdAt       DateTime @default(now())
+
+  amministratori   Amministratore[]
+  unita            UnitaImmobiliare[]
+  condomini        Condomino[]
+  tabelle          TabellaMillesimale[]
+  esercizi         Esercizio[]
+  fornitori        Fornitore[]
+  contratti        Contratto[]
+  impianti         Impianto[]
+  assemblee        Assemblea[]
+  documenti        Documento[]
+  categorieSpesa   CategoriaSpesa[]
+  trattamenti      TrattamentoDati[]
+  registroMandati  MandatoAmministratore[]
+}
+
+// =====================================================================
+// AMMINISTRATORE (art. 1129 c.c.)
+// =====================================================================
+model Amministratore {
+  id             String   @id @default(cuid())
+  condominioId   String
+  condominio     Condominio @relation(fields: [condominioId], references: [id], onDelete: Cascade)
+  nome           String
+  cognome        String
+  codiceFiscale  String?
+  partitaIva     String?
+  pec            String?
+  email          String?
+  telefono       String?
+  // Requisiti e adempimenti (art. 1129 c.c.)
+  numeroIscrizione String? // formazione periodica obbligatoria (D.M. 140/2014)
+  polizzaRcNumero  String?
+  polizzaRcMassimale Float?
+  polizzaRcScadenza  DateTime?
+  attuale        Boolean  @default(true)
+  createdAt      DateTime @default(now())
+}
+
+// Registro di nomina e revoca dell'amministratore (art. 1130 n.4 c.c.)
+model MandatoAmministratore {
+  id             String   @id @default(cuid())
+  condominioId   String
+  condominio     Condominio @relation(fields: [condominioId], references: [id], onDelete: Cascade)
+  nominativo     String
+  dataNomina     DateTime
+  dataScadenza   DateTime? // mandato annuale, rinnovato tacitamente per altro anno (art. 1129 c.c.)
+  dataRevoca     DateTime?
+  compensoAnnuo  Float?
+  deliberaRif    String? // riferimento verbale assemblea
+  note           String?
+  createdAt      DateTime @default(now())
+}
+
+// =====================================================================
+// ANAGRAFE CONDOMINIALE (art. 1130 n.6 c.c.)
+// =====================================================================
+model Condomino {
+  id            String   @id @default(cuid())
+  condominioId  String
+  condominio    Condominio @relation(fields: [condominioId], references: [id], onDelete: Cascade)
+  tipoPersona   String   @default("fisica") // fisica | giuridica
+  nome          String?
+  cognome       String?
+  ragioneSociale String?
+  codiceFiscale String?
+  partitaIva    String?
+  // Dati anagrafici / residenza / domicilio (art. 1130 n.6)
+  indirizzo     String?
+  cap           String?
+  citta         String?
+  provincia     String?
+  email         String?
+  pec           String?
+  telefono      String?
+  note          String?
+  createdAt     DateTime @default(now())
+
+  titolarita    Titolarita[]
+  partecipazioni Partecipazione[]
+}
+
+model UnitaImmobiliare {
+  id            String   @id @default(cuid())
+  condominioId  String
+  condominio    Condominio @relation(fields: [condominioId], references: [id], onDelete: Cascade)
+  denominazione String   // es. "Interno 3", "Box 5"
+  tipo          String   @default("appartamento") // appartamento | box | cantina | negozio | ufficio | magazzino | altro
+  scala         String?
+  piano         String?
+  superficie    Float?
+  // Dati catastali (anagrafe - art. 1130 n.6)
+  catastoFoglio    String?
+  catastoParticella String?
+  catastoSub       String?
+  note          String?
+  createdAt     DateTime @default(now())
+
+  titolarita    Titolarita[]
+  quoteMillesimali QuotaMillesimale[]
+}
+
+// Collega persone e unità: proprietà, usufrutto, locazione (art. 1130 n.6 richiede anche i dati dei conduttori per alcune delibere)
+model Titolarita {
+  id          String   @id @default(cuid())
+  unitaId     String
+  unita       UnitaImmobiliare @relation(fields: [unitaId], references: [id], onDelete: Cascade)
+  condominoId String
+  condomino   Condomino @relation(fields: [condominoId], references: [id], onDelete: Cascade)
+  tipo        String   @default("proprietario") // proprietario | nudo_proprietario | usufruttuario | conduttore | comodatario
+  quota       Float    @default(100) // percentuale di titolarità (comproprietà)
+  dataInizio  DateTime?
+  dataFine    DateTime?
+}
+
+// =====================================================================
+// TABELLE MILLESIMALI (art. 68-69 disp. att. c.c.)
+// =====================================================================
+model TabellaMillesimale {
+  id           String   @id @default(cuid())
+  condominioId String
+  condominio   Condominio @relation(fields: [condominioId], references: [id], onDelete: Cascade)
+  nome         String   // es. "Proprietà generale", "Scala A", "Ascensore", "Riscaldamento"
+  tipo         String   @default("proprieta") // proprieta | scala | ascensore | riscaldamento | acqua | lastrico | altro
+  descrizione  String?
+  totale       Float    @default(1000)
+  createdAt    DateTime @default(now())
+
+  quote        QuotaMillesimale[]
+  categorie    CategoriaSpesa[]
+}
+
+model QuotaMillesimale {
+  id         String   @id @default(cuid())
+  tabellaId  String
+  tabella    TabellaMillesimale @relation(fields: [tabellaId], references: [id], onDelete: Cascade)
+  unitaId    String
+  unita      UnitaImmobiliare @relation(fields: [unitaId], references: [id], onDelete: Cascade)
+  millesimi  Float    @default(0)
+
+  @@unique([tabellaId, unitaId])
+}
+
+// =====================================================================
+// GESTIONE ECONOMICA / RENDICONTO (art. 1130 n.3, 1130-bis c.c.)
+// =====================================================================
+model Esercizio {
+  id            String   @id @default(cuid())
+  condominioId  String
+  condominio    Condominio @relation(fields: [condominioId], references: [id], onDelete: Cascade)
+  denominazione String   // es. "Esercizio 2025 - Gestione ordinaria"
+  dataInizio    DateTime
+  dataFine      DateTime
+  tipo          String   @default("ordinaria") // ordinaria | straordinaria
+  stato         String   @default("aperto")    // aperto | preventivo_approvato | consuntivo_approvato | chiuso
+  // Fondo riserva / fondo speciale (art. 1135 c.c.: fondo obbligatorio per opere straordinarie)
+  fondoRiserva  Float    @default(0)
+  note          String?
+  createdAt     DateTime @default(now())
+
+  spese         Spesa[]
+  rate          Rata[]
+  preventivi    VocePreventivo[]
+}
+
+model CategoriaSpesa {
+  id           String   @id @default(cuid())
+  condominioId String
+  condominio   Condominio @relation(fields: [condominioId], references: [id], onDelete: Cascade)
+  nome         String   // es. "Pulizie scale", "Energia elettrica", "Ascensore - manutenzione"
+  tabellaId    String?  // tabella di ripartizione predefinita
+  tabella      TabellaMillesimale? @relation(fields: [tabellaId], references: [id])
+  tipo         String   @default("ordinaria") // ordinaria | straordinaria
+
+  spese        Spesa[]
+  preventivi   VocePreventivo[]
+}
+
+model Spesa {
+  id           String   @id @default(cuid())
+  esercizioId  String
+  esercizio    Esercizio @relation(fields: [esercizioId], references: [id], onDelete: Cascade)
+  data         DateTime
+  descrizione  String
+  importo      Float
+  categoriaId  String?
+  categoria    CategoriaSpesa? @relation(fields: [categoriaId], references: [id])
+  fornitoreId  String?
+  fornitore    Fornitore? @relation(fields: [fornitoreId], references: [id])
+  // Se valorizzato, sovrascrive la tabella di ripartizione della categoria
+  tabellaOverrideId String?
+  numeroDocumento String?
+  pagata       Boolean  @default(false)
+  createdAt    DateTime @default(now())
+}
+
+// Voci di preventivo (bilancio preventivo da approvare in assemblea)
+model VocePreventivo {
+  id          String   @id @default(cuid())
+  esercizioId String
+  esercizio   Esercizio @relation(fields: [esercizioId], references: [id], onDelete: Cascade)
+  categoriaId String?
+  categoria   CategoriaSpesa? @relation(fields: [categoriaId], references: [id])
+  descrizione String
+  importo     Float
+}
+
+// =====================================================================
+// RATE E PAGAMENTI (riscossione quote - art. 63 disp. att. c.c.)
+// =====================================================================
+model Rata {
+  id           String   @id @default(cuid())
+  esercizioId  String
+  esercizio    Esercizio @relation(fields: [esercizioId], references: [id], onDelete: Cascade)
+  condominoId  String
+  numero       Int
+  descrizione  String?
+  scadenza     DateTime
+  importo      Float
+  createdAt    DateTime @default(now())
+
+  pagamenti    Pagamento[]
+}
+
+model Pagamento {
+  id          String   @id @default(cuid())
+  rataId      String
+  rata        Rata     @relation(fields: [rataId], references: [id], onDelete: Cascade)
+  data        DateTime
+  importo     Float
+  metodo      String   @default("bonifico") // bonifico | contanti | assegno | altro
+  riferimento String?
+  createdAt   DateTime @default(now())
+}
+
+// =====================================================================
+// FORNITORI / CONTRATTI / IMPIANTI (scadenzario tecnico)
+// =====================================================================
+model Fornitore {
+  id            String   @id @default(cuid())
+  condominioId  String
+  condominio    Condominio @relation(fields: [condominioId], references: [id], onDelete: Cascade)
+  ragioneSociale String
+  categoria     String?  // es. "Ascensori", "Pulizie", "Assicurazione", "Energia"
+  partitaIva    String?
+  codiceFiscale String?
+  referente     String?
+  telefono      String?
+  email         String?
+  pec           String?
+  iban          String?
+  note          String?
+
+  contratti     Contratto[]
+  spese         Spesa[]
+}
+
+model Contratto {
+  id           String   @id @default(cuid())
+  condominioId String
+  condominio   Condominio @relation(fields: [condominioId], references: [id], onDelete: Cascade)
+  fornitoreId  String?
+  fornitore    Fornitore? @relation(fields: [fornitoreId], references: [id])
+  oggetto      String
+  tipo         String   @default("manutenzione") // manutenzione | assicurazione | fornitura | servizio
+  dataInizio   DateTime?
+  dataScadenza DateTime?
+  importoAnnuo Float?
+  rinnovoTacito Boolean @default(false)
+  note         String?
+}
+
+model Impianto {
+  id            String   @id @default(cuid())
+  condominioId  String
+  condominio    Condominio @relation(fields: [condominioId], references: [id], onDelete: Cascade)
+  tipo          String   // ascensore | centrale_termica | antincendio | elettrico | idrico | fotovoltaico | cancello | altro
+  descrizione   String
+  // Adempimenti di sicurezza (es. verifiche periodiche ascensori DPR 162/99, CPI antincendio, libretto impianto termico)
+  ultimaVerifica   DateTime?
+  prossimaVerifica DateTime?
+  periodicitaMesi  Int?
+  enteVerificatore String?
+  note          String?
+}
+
+// =====================================================================
+// ASSEMBLEE (artt. 1135-1136 c.c.) - registro verbali (art. 1130 n.7)
+// =====================================================================
+model Assemblea {
+  id            String   @id @default(cuid())
+  condominioId  String
+  condominio    Condominio @relation(fields: [condominioId], references: [id], onDelete: Cascade)
+  tipo          String   @default("ordinaria") // ordinaria | straordinaria
+  oggettoSintesi String?
+  luogo         String?
+  dataPrimaConvocazione   DateTime?
+  oraPrimaConvocazione    String?
+  dataSecondaConvocazione DateTime?
+  oraSecondaConvocazione  String?
+  convocazioneInviata     Boolean @default(false)
+  dataInvioConvocazione   DateTime?
+  stato         String   @default("convocata") // convocata | svolta | annullata
+  verbaleTesto  String?
+  verbaleApprovato Boolean @default(false)
+  createdAt     DateTime @default(now())
+
+  puntiOdg      PuntoOdg[]
+  partecipazioni Partecipazione[]
+}
+
+model PuntoOdg {
+  id           String   @id @default(cuid())
+  assembleaId  String
+  assemblea    Assemblea @relation(fields: [assembleaId], references: [id], onDelete: Cascade)
+  numero       Int
+  oggetto      String
+  // Tipo di maggioranza richiesta per la delibera (determina il quorum deliberativo)
+  tipoMaggioranza String @default("ordinaria")
+  // Esito votazione
+  votato       Boolean  @default(false)
+  favorevoliMillesimi Float @default(0)
+  favorevoliTeste     Int   @default(0)
+  contrariMillesimi   Float @default(0)
+  contrariTeste       Int   @default(0)
+  astenutiMillesimi   Float @default(0)
+  astenutiTeste       Int   @default(0)
+  esito        String?  // approvato | respinto | rinviato
+  note         String?
+}
+
+model Partecipazione {
+  id            String   @id @default(cuid())
+  assembleaId   String
+  assemblea     Assemblea @relation(fields: [assembleaId], references: [id], onDelete: Cascade)
+  condominoId   String
+  condomino     Condomino @relation(fields: [condominoId], references: [id], onDelete: Cascade)
+  presente      Boolean  @default(false)
+  perDelega     Boolean  @default(false)
+  delegatoNome  String?
+  // Millesimi rappresentati (somma delle quote delle unità del condomino sulla tabella proprietà)
+  millesimiRappresentati Float @default(0)
+
+  @@unique([assembleaId, condominoId])
+}
+
+// =====================================================================
+// DOCUMENTI / ARCHIVIO
+// =====================================================================
+model Documento {
+  id           String   @id @default(cuid())
+  condominioId String
+  condominio   Condominio @relation(fields: [condominioId], references: [id], onDelete: Cascade)
+  categoria    String   @default("generale") // verbali | contabilita | contratti | tecnici | assicurazioni | fiscale | generale
+  nome         String
+  descrizione  String?
+  riferimentoAnno Int?
+  createdAt    DateTime @default(now())
+}
+
+// =====================================================================
+// PRIVACY / GDPR (Reg. UE 2016/679) - registro dei trattamenti
+// =====================================================================
+model TrattamentoDati {
+  id            String   @id @default(cuid())
+  condominioId  String
+  condominio    Condominio @relation(fields: [condominioId], references: [id], onDelete: Cascade)
+  finalita      String   // es. "Gestione anagrafe condominiale", "Riscossione quote"
+  baseGiuridica String   // es. "Obbligo legale (art. 1130 c.c.)", "Esecuzione contratto"
+  categorieDati String   // es. "Dati anagrafici, dati di contatto, dati catastali"
+  destinatari   String?  // es. "Fornitori, professionisti, autorità"
+  conservazione String?  // tempo di conservazione
+  note          String?
+}
